@@ -2,6 +2,13 @@ import { useState } from 'react';
 import { createFormat } from '../api/format.js';
 import './Pages.css';
 
+const CONTENT_TYPES = [
+  { value: '', label: '선택 안 함' },
+  { value: 'application/json', label: 'application/json' },
+  { value: 'application/xml', label: 'application/xml' },
+  { value: 'text/plain', label: 'text/plain' },
+];
+
 export default function FormatForm() {
   const [form, setForm] = useState({
     name: '',
@@ -45,7 +52,7 @@ export default function FormatForm() {
     <div className="page form-page">
       <h1>데이터 포맷 저장</h1>
       <p className="form-desc">
-        좌표 전송 시 사용할 포맷을 정의합니다. <code>#{lat}</code>, <code>#{lon}</code> 에 위도·경도가 들어갑니다.
+        좌표 전송 시 사용할 포맷을 정의합니다. <code>{'#{lat}'}</code>, <code>{'#{lon}'}</code> 에 위도·경도가 들어갑니다.
       </p>
       <form onSubmit={handleSubmit} className="form">
         <label>
@@ -72,13 +79,17 @@ export default function FormatForm() {
         </label>
         <label>
           Content-Type (선택)
-          <input
-            type="text"
+          <select
             name="contentType"
             value={form.contentType}
             onChange={handleChange}
-            placeholder="예: application/json"
-          />
+          >
+            {CONTENT_TYPES.map((type) => (
+              <option key={type.value} value={type.value}>
+                {type.label}
+              </option>
+            ))}
+          </select>
         </label>
         <div className="format-examples">
           <p>예시:</p>

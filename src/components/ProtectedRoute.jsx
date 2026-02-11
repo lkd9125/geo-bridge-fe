@@ -6,12 +6,16 @@ export default function ProtectedRoute({ children }) {
   const location = useLocation();
 
   if (loading) {
-    return <div className="loading">로딩 중...</div>;
+    return (
+      <div className="page">
+        <div className="loading">로딩 중...</div>
+      </div>
+    );
   }
 
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  return children;
+  return <>{children}</>;
 }
