@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { MapContainer, TileLayer, useMapEvents, Polyline } from 'react-leaflet';
 import { runSimulator } from '../api/simulator.js';
 import { getHostList } from '../api/host.js';
@@ -16,6 +16,17 @@ function MapClickHandler({ onAddPoint, points }) {
   return null;
 }
 
+// 포맷 문자열에서 변수 추출 (#{변수명} 형식)
+const extractVariables = (formatString) => {
+  const regex = /#\{([^}]+)\}/g;
+  const variables = new Set();
+  let match;
+  while ((match = regex.exec(formatString)) !== null) {
+    variables.add(match[1]);
+  }
+  return Array.from(variables);
+};
+
 export default function MapSimulator() {
   const [points, setPoints] = useState([]);
   const [selectedHost, setSelectedHost] = useState(null);
@@ -26,6 +37,8 @@ export default function MapSimulator() {
     speedUnit: 'M_S',
     cycle: 1,
   });
+  const [parameters, setParameters] = useState({});
+  const [additionalVariables, setAdditionalVariables] = useState([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -52,6 +65,26 @@ export default function MapSimulator() {
 
   const handleFormatSelect = (format) => {
     setSelectedFormat(format);
+    // 포맷에서 변수 추출 (lat, lon 제외)
+    const variables = extractVariables(format.format);
+    const additionalVars = variables.filter(v => v !== 'lat' && v !== 'lon');
+    setAdditionalVariables(additionalVars);
+    
+    // 기존 파라미터 중 추가 변수에 해당하는 것만 유지
+    const newParameters = {};
+    additionalVars.forEach(v => {
+      if (parameters[v] !== undefined) {
+        newParameters[v] = parameters[v];
+      }
+    });
+    setParameters(newParameters);
+  };
+
+  const handleParameterChange = (variable, value) => {
+    setParameters(prev => ({
+      ...prev,
+      [variable]: value,
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -84,6 +117,7 @@ export default function MapSimulator() {
         speedUnit: form.speedUnit,
         cycle: Number(form.cycle) || 1,
         format: selectedFormat.format,
+        parameter: parameters,
       };
       const uuid = await runSimulator(body);
       setSuccess(`시뮬레이터가 시작되었습니다. (UUID: ${uuid})`);
@@ -209,6 +243,22 @@ export default function MapSimulator() {
                 min="1"
               />
             </label>
+            {additionalVariables.length > 0 && (
+              <div className="parameters-section">
+                <div className="parameters-label">추가 파라미터</div>
+                {additionalVariables.map((variable) => (
+                  <label key={variable}>
+                    <span className="parameter-name">#{`{${variable}}`}</span>
+                    <input
+                      type="text"
+                      value={parameters[variable] || ''}
+                      onChange={(e) => handleParameterChange(variable, e.target.value)}
+                      placeholder={`${variable} 값을 입력하세요`}
+                    />
+                  </label>
+                ))}
+              </div>
+            )}
             {error && <p className="form-error">{error}</p>}
             {success && <p className="form-success">{success}</p>}
             <button type="submit" disabled={loading || points.length < 2}>
