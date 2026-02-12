@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, useMapEvents, Polyline } from 'react-leaflet';
 import { runSimulator } from '../api/simulator.js';
 import { getHostList } from '../api/host.js';
 import { getFormatList } from '../api/format.js';
-import { useEffect } from 'react';
+import SelectionModal from '../components/SelectionModal.jsx';
 import 'leaflet/dist/leaflet.css';
 import './MapSimulator.css';
 
@@ -18,19 +18,19 @@ function MapClickHandler({ onAddPoint, points }) {
 
 export default function MapSimulator() {
   const [points, setPoints] = useState([]);
-  const [hosts, setHosts] = useState([]);
-  const [formats, setFormats] = useState([]);
+  const [selectedHost, setSelectedHost] = useState(null);
+  const [selectedFormat, setSelectedFormat] = useState(null);
   const [form, setForm] = useState({
-    hostIdx: '',
     name: '',
     speed: 10,
     speedUnit: 'M_S',
     cycle: 1,
-    formatIdx: '',
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [hostModalOpen, setHostModalOpen] = useState(false);
+  const [formatModalOpen, setFormatModalOpen] = useState(false);
 
   const addPoint = useCallback((lat, lon) => {
     setPoints((prev) => [...prev, { lat, lon }]);
@@ -46,15 +46,13 @@ export default function MapSimulator() {
     setSuccess('');
   };
 
-  useEffect(() => {
-    getHostList()
-      .then((res) => setHosts(res.list || []))
-      .catch(() => setHosts([]));
-    
-    getFormatList()
-      .then((res) => setFormats(res.list || []))
-      .catch(() => setFormats([]));
-  }, []);
+  const handleHostSelect = (host) => {
+    setSelectedHost(host);
+  };
+
+  const handleFormatSelect = (format) => {
+    setSelectedFormat(format);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -62,32 +60,30 @@ export default function MapSimulator() {
       setError('최소 2개 이상의 좌표를 지정해 주세요.');
       return;
     }
+    if (!selectedHost) {
+      setError('호스트를 선택해 주세요.');
+      return;
+    }
+    if (!selectedFormat) {
+      setError('전송 포맷을 선택해 주세요.');
+      return;
+    }
     setError('');
     setSuccess('');
     setLoading(true);
     try {
-      const host = hosts.find((h) => String(h.idx) === form.hostIdx);
-      if (!host) {
-        setError('호스트를 선택해 주세요.');
-        return;
-      }
-      const format = formats.find((f) => String(f.idx) === form.formatIdx);
-      if (!format) {
-        setError('전송 포맷을 선택해 주세요.');
-        return;
-      }
       const body = {
-        type: host.type,
-        host: host.host,
-        name: form.name || host.name,
-        topic: host.topic,
-        hostId: host.hostId,
-        password: host.password,
+        type: selectedHost.type,
+        host: selectedHost.host,
+        name: form.name || selectedHost.name,
+        topic: selectedHost.topic,
+        hostId: selectedHost.hostId,
+        password: selectedHost.password,
         pointList: points.map((p) => ({ lat: p.lat, lon: p.lon })),
         speed: Number(form.speed),
         speedUnit: form.speedUnit,
         cycle: Number(form.cycle) || 1,
-        format: format.format,
+        format: selectedFormat.format,
       };
       const uuid = await runSimulator(body);
       setSuccess(`시뮬레이터가 시작되었습니다. (UUID: ${uuid})`);
@@ -157,14 +153,23 @@ export default function MapSimulator() {
           <form onSubmit={handleSubmit} className="form">
             <label>
               호스트 선택
-              <select name="hostIdx" value={form.hostIdx} onChange={handleChange} required>
-                <option value="">선택하세요</option>
-                {hosts.map((h) => (
-                  <option key={h.idx} value={h.idx}>
-                    {h.name} ({h.type})
-                  </option>
-                ))}
-              </select>
+              <button
+                type="button"
+                onClick={() => setHostModalOpen(true)}
+                className={`select-button ${selectedHost ? 'selected' : ''}`}
+              >
+                {selectedHost ? `${selectedHost.name} (${selectedHost.type})` : '호스트 선택'}
+              </button>
+            </label>
+            <label>
+              전송 포맷
+              <button
+                type="button"
+                onClick={() => setFormatModalOpen(true)}
+                className={`select-button ${selectedFormat ? 'selected' : ''}`}
+              >
+                {selectedFormat ? selectedFormat.name : '포맷 선택'}
+              </button>
             </label>
             <label>
               클라이언트 이름 (선택)
@@ -204,17 +209,6 @@ export default function MapSimulator() {
                 min="1"
               />
             </label>
-            <label>
-              전송 포맷
-              <select name="formatIdx" value={form.formatIdx} onChange={handleChange} required>
-                <option value="">선택하세요</option>
-                {formats.map((f) => (
-                  <option key={f.idx} value={f.idx}>
-                    {f.name}
-                  </option>
-                ))}
-              </select>
-            </label>
             {error && <p className="form-error">{error}</p>}
             {success && <p className="form-success">{success}</p>}
             <button type="submit" disabled={loading || points.length < 2}>
@@ -223,6 +217,26 @@ export default function MapSimulator() {
           </form>
         </div>
       </div>
+
+      <SelectionModal
+        isOpen={hostModalOpen}
+        onClose={() => setHostModalOpen(false)}
+        onSelect={handleHostSelect}
+        title="호스트 선택"
+        fetchData={getHostList}
+        getItemLabel={(host) => `${host.name} (${host.type})`}
+        selectedValue={selectedHost ? String(selectedHost.idx) : ''}
+      />
+
+      <SelectionModal
+        isOpen={formatModalOpen}
+        onClose={() => setFormatModalOpen(false)}
+        onSelect={handleFormatSelect}
+        title="전송 포맷 선택"
+        fetchData={getFormatList}
+        getItemLabel={(format) => format.name}
+        selectedValue={selectedFormat ? String(selectedFormat.idx) : ''}
+      />
     </div>
   );
 }
