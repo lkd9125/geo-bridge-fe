@@ -64,9 +64,39 @@
   gap: 1rem;
 }
 
+.points-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
 .points-count {
   font-weight: 500;
   color: #1a1a2e;
+  margin: 0;
+}
+
+.clear-points-btn {
+  padding: 0.5rem 1rem;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.clear-points-btn:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.clear-points-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #9ca3af;
 }
 
 .map-form-area .form {

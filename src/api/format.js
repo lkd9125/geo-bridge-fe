@@ -4,3 +4,9 @@ import { apiClient } from './client.js';
 export async function createFormat(body) {
   await apiClient.post('/user/format', body);
 }
+
+/** 포맷 목록 조회 */
+export async function getFormatList(params = {}) {
+  const { data } = await apiClient.get('/user/format/plist', { params });
+  return data;
+}

@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { MapContainer, TileLayer, useMapEvents, Polyline } from 'react-leaflet';
 import { runSimulator } from '../api/simulator.js';
 import { getHostList } from '../api/host.js';
+import { getFormatList } from '../api/format.js';
 import { useEffect } from 'react';
 import 'leaflet/dist/leaflet.css';
 import './MapSimulator.css';
@@ -18,13 +19,14 @@ function MapClickHandler({ onAddPoint, points }) {
 export default function MapSimulator() {
   const [points, setPoints] = useState([]);
   const [hosts, setHosts] = useState([]);
+  const [formats, setFormats] = useState([]);
   const [form, setForm] = useState({
     hostIdx: '',
     name: '',
     speed: 10,
     speedUnit: 'M_S',
     cycle: 1,
-    format: '{"lat":#{lat},"lon":#{lon}}',
+    formatIdx: '',
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -40,12 +42,18 @@ export default function MapSimulator() {
 
   const clearPoints = () => {
     setPoints([]);
+    setError('');
+    setSuccess('');
   };
 
   useEffect(() => {
     getHostList()
       .then((res) => setHosts(res.list || []))
       .catch(() => setHosts([]));
+    
+    getFormatList()
+      .then((res) => setFormats(res.list || []))
+      .catch(() => setFormats([]));
   }, []);
 
   const handleSubmit = async (e) => {
@@ -63,6 +71,11 @@ export default function MapSimulator() {
         setError('호스트를 선택해 주세요.');
         return;
       }
+      const format = formats.find((f) => String(f.idx) === form.formatIdx);
+      if (!format) {
+        setError('전송 포맷을 선택해 주세요.');
+        return;
+      }
       const body = {
         type: host.type,
         host: host.host,
@@ -74,7 +87,7 @@ export default function MapSimulator() {
         speed: Number(form.speed),
         speedUnit: form.speedUnit,
         cycle: Number(form.cycle) || 1,
-        format: form.format,
+        format: format.format,
       };
       const uuid = await runSimulator(body);
       setSuccess(`시뮬레이터가 시작되었습니다. (UUID: ${uuid})`);
@@ -130,7 +143,17 @@ export default function MapSimulator() {
         </div>
 
         <div className="map-form-area">
-          <p className="points-count">선택된 좌표: {points.length}개</p>
+          <div className="points-header">
+            <p className="points-count">선택된 좌표: {points.length}개</p>
+            <button 
+              type="button" 
+              onClick={clearPoints} 
+              disabled={points.length === 0}
+              className="clear-points-btn"
+            >
+              좌표 초기화
+            </button>
+          </div>
           <form onSubmit={handleSubmit} className="form">
             <label>
               호스트 선택
@@ -183,14 +206,14 @@ export default function MapSimulator() {
             </label>
             <label>
               전송 포맷
-              <textarea
-                name="format"
-                value={form.format}
-                onChange={handleChange}
-                rows={4}
-                placeholder='{"lat":#{lat},"lon":#{lon}}'
-                required
-              />
+              <select name="formatIdx" value={form.formatIdx} onChange={handleChange} required>
+                <option value="">선택하세요</option>
+                {formats.map((f) => (
+                  <option key={f.idx} value={f.idx}>
+                    {f.name}
+                  </option>
+                ))}
+              </select>
             </label>
             {error && <p className="form-error">{error}</p>}
             {success && <p className="form-success">{success}</p>}
