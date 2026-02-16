@@ -1,13 +1,13 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { MapContainer, TileLayer, useMapEvents, Polyline } from 'react-leaflet';
-import { runSimulator } from '../api/simulator.js';
+import { runSimulator, stopSimulator } from '../api/simulator.js';
 import { getHostList } from '../api/host.js';
 import { getFormatList } from '../api/format.js';
 import SelectionModal from '../components/SelectionModal.jsx';
 import 'leaflet/dist/leaflet.css';
 import './MapSimulator.css';
 
-function MapClickHandler({ onAddPoint, points }) {
+function MapClickHandler({ onAddPoint }) {
   useMapEvents({
     click(e) {
       onAddPoint(e.latlng.lat, e.latlng.lng);
@@ -44,6 +44,8 @@ export default function MapSimulator() {
   const [loading, setLoading] = useState(false);
   const [hostModalOpen, setHostModalOpen] = useState(false);
   const [formatModalOpen, setFormatModalOpen] = useState(false);
+  const [runningUuid, setRunningUuid] = useState(null);
+  const [stopping, setStopping] = useState(false);
 
   const addPoint = useCallback((lat, lon) => {
     setPoints((prev) => [...prev, { lat, lon }]);
@@ -120,11 +122,27 @@ export default function MapSimulator() {
         parameter: parameters,
       };
       const uuid = await runSimulator(body);
+      setRunningUuid(uuid);
       setSuccess(`시뮬레이터가 시작되었습니다. (UUID: ${uuid})`);
     } catch (err) {
       setError(err.response?.data?.message || '실행에 실패했습니다.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleStop = async () => {
+    if (!runningUuid) return;
+    setStopping(true);
+    setError('');
+    try {
+      await stopSimulator(runningUuid);
+      setRunningUuid(null);
+      setSuccess('시뮬레이터가 종료되었습니다.');
+    } catch (err) {
+      setError(err.response?.data?.message || '종료에 실패했습니다.');
+    } finally {
+      setStopping(false);
     }
   };
 
@@ -153,7 +171,7 @@ export default function MapSimulator() {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            <MapClickHandler onAddPoint={addPoint} points={points} />
+            <MapClickHandler onAddPoint={addPoint} />
             {points.length >= 2 && (
               <Polyline
                 positions={points.map((p) => [p.lat, p.lon])}
@@ -261,7 +279,20 @@ export default function MapSimulator() {
             )}
             {error && <p className="form-error">{error}</p>}
             {success && <p className="form-success">{success}</p>}
-            <button type="submit" disabled={loading || points.length < 2}>
+            {runningUuid && (
+              <div className="simulator-status">
+                <p className="status-text">실행 중: {runningUuid.substring(0, 8)}...</p>
+                <button
+                  type="button"
+                  onClick={handleStop}
+                  disabled={stopping}
+                  className="stop-button"
+                >
+                  {stopping ? '종료 중...' : '시뮬레이터 종료'}
+                </button>
+              </div>
+            )}
+            <button type="submit" disabled={loading || points.length < 2 || runningUuid}>
               {loading ? '전송 중...' : '시뮬레이터 실행'}
             </button>
           </form>
