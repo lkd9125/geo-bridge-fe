@@ -16,6 +16,7 @@ export default function Home() {
           <Link to="/host" className="card-link">호스트 설정</Link>
           <Link to="/format" className="card-link">데이터 포맷 설정</Link>
           <Link to="/map" className="card-link">지도 시뮬레이터</Link>
+          <Link to="/map/monitoring" className="card-link">모니터링</Link>
         </div>
       ) : (
         <div className="home-links">

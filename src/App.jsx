@@ -8,6 +8,7 @@ import Register from './pages/Register.jsx';
 import HostForm from './pages/HostForm.jsx';
 import FormatForm from './pages/FormatForm.jsx';
 import MapSimulator from './pages/MapSimulator.jsx';
+import MapMonitoring from './pages/MapMonitoring.jsx';
 import './App.css';
 
 function App() {
@@ -40,6 +41,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <MapSimulator />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="map/monitoring"
+              element={
+                <ProtectedRoute>
+                  <MapMonitoring />
                 </ProtectedRoute>
               }
             />
