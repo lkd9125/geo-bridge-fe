@@ -7,10 +7,22 @@ import SelectionModal from '../components/SelectionModal.jsx';
 import 'leaflet/dist/leaflet.css';
 import './MapSimulator.css';
 
-function MapClickHandler({ onAddPoint }) {
+function MapClickHandler({ onAddPoint, onMouseMove, onDoubleClick, isAddingPoints }) {
   useMapEvents({
     click(e) {
-      onAddPoint(e.latlng.lat, e.latlng.lng);
+      if (isAddingPoints) {
+        onAddPoint(e.latlng.lat, e.latlng.lng);
+      }
+    },
+    mousemove(e) {
+      if (isAddingPoints) {
+        onMouseMove(e.latlng.lat, e.latlng.lng);
+      }
+    },
+    dblclick() {
+      if (isAddingPoints) {
+        onDoubleClick();
+      }
     },
   });
   return null;
@@ -46,19 +58,38 @@ export default function MapSimulator() {
   const [formatModalOpen, setFormatModalOpen] = useState(false);
   const [runningUuid, setRunningUuid] = useState(null);
   const [stopping, setStopping] = useState(false);
+  const [isAddingPoints, setIsAddingPoints] = useState(true);
+  const [mousePosition, setMousePosition] = useState(null);
 
   const addPoint = useCallback((lat, lon) => {
     setPoints((prev) => [...prev, { lat, lon }]);
+    setMousePosition(null); // 좌표 추가 후 마우스 위치 초기화
   }, []);
+
+  const handleMouseMove = useCallback((lat, lon) => {
+    setMousePosition({ lat, lon });
+  }, []);
+
+  const handleDoubleClick = useCallback(() => {
+    setIsAddingPoints(false);
+    setMousePosition(null);
+  }, []);
+
+  const startAddingPoints = () => {
+    setIsAddingPoints(true);
+  };
 
   const removeLastPoint = () => {
     setPoints((prev) => prev.slice(0, -1));
+    setMousePosition(null);
   };
 
   const clearPoints = () => {
     setPoints([]);
+    setMousePosition(null);
     setError('');
     setSuccess('');
+    setIsAddingPoints(true);
   };
 
   const handleHostSelect = (host) => {
@@ -158,6 +189,8 @@ export default function MapSimulator() {
       <h1>지도 시뮬레이터</h1>
       <p className="form-desc">
         지도를 클릭해 좌표를 순서대로 찍은 뒤, 호스트와 포맷을 선택해 전송하세요.
+        <br />
+        <small>더블클릭으로 좌표 추가 모드를 종료할 수 있습니다.</small>
       </p>
 
       <div className="map-layout">
@@ -171,16 +204,43 @@ export default function MapSimulator() {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            <MapClickHandler onAddPoint={addPoint} />
+            <MapClickHandler 
+              onAddPoint={addPoint}
+              onMouseMove={handleMouseMove}
+              onDoubleClick={handleDoubleClick}
+              isAddingPoints={isAddingPoints}
+            />
+            {/* 확정된 좌표로 그린 선 */}
             {points.length >= 2 && (
               <Polyline
                 positions={points.map((p) => [p.lat, p.lon])}
                 color="#3b82f6"
                 weight={4}
+                opacity={0.8}
+              />
+            )}
+            {/* 마우스를 따라오는 미리보기 선 */}
+            {isAddingPoints && points.length > 0 && mousePosition && (
+              <Polyline
+                positions={[
+                  [points[points.length - 1].lat, points[points.length - 1].lon],
+                  [mousePosition.lat, mousePosition.lon]
+                ]}
+                color="#60a5fa"
+                weight={3}
+                opacity={0.5}
+                dashArray="5, 5"
               />
             )}
           </MapContainer>
           <div className="map-controls">
+            <button 
+              type="button" 
+              onClick={isAddingPoints ? handleDoubleClick : startAddingPoints}
+              className={isAddingPoints ? 'active-mode' : ''}
+            >
+              {isAddingPoints ? '좌표 추가 중 (더블클릭 종료)' : '좌표 추가 시작'}
+            </button>
             <button type="button" onClick={removeLastPoint} disabled={points.length === 0}>
               마지막 점 제거
             </button>

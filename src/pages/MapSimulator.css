@@ -58,6 +58,17 @@
   cursor: not-allowed;
 }
 
+.map-controls button.active-mode {
+  background: #3b82f6;
+  color: white;
+  border-color: #2563eb;
+  font-weight: 500;
+}
+
+.map-controls button.active-mode:hover {
+  background: #2563eb;
+}
+
 .map-form-area {
   display: flex;
   flex-direction: column;
