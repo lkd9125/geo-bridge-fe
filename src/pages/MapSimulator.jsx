@@ -100,7 +100,7 @@ export default function MapSimulator() {
     setSelectedFormat(format);
     // 포맷에서 변수 추출 (lat, lon 제외)
     const variables = extractVariables(format.format);
-    const additionalVars = variables.filter(v => v !== 'lat' && v !== 'lon');
+    const additionalVars = variables.filter(v => v !== 'lat' && v !== 'lon' && v !== 'heading');
     setAdditionalVariables(additionalVars);
     
     // 기존 파라미터 중 추가 변수에 해당하는 것만 유지
