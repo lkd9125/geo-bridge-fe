@@ -18,11 +18,15 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// 401 응답 시 로그아웃 처리
+// 401 또는 JWT 만료(J403) 응답 시 로그아웃 후 로그인 화면으로
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const code = error.response?.data?.code;
+    const isUnauthorized = error.response?.status === 401;
+    const isJwtExpired = code === 'J403';
+
+    if (isUnauthorized || isJwtExpired) {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       window.location.href = '/login';
