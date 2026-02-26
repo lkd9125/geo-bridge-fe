@@ -18,7 +18,7 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// 401 또는 JWT 만료(J403) 응답 시 로그아웃 후 로그인 화면으로
+// 401 또는 JWT 만료(J403) 응답 시 로그아웃 후 로그인 화면으로 (SPA 내 이동, 새로고침 없음)
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -29,7 +29,7 @@ apiClient.interceptors.response.use(
     if (isUnauthorized || isJwtExpired) {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
-      window.location.href = '/login';
+      window.dispatchEvent(new CustomEvent('auth-required'));
     }
     return Promise.reject(error);
   }

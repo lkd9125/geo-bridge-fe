@@ -14,7 +14,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
-// 드론 아이콘 생성 함수 (heading: 도 단위, 0=북쪽, 시계방향)
+// 시뮬레이터 아이콘 생성 함수 (heading: 도 단위, 0=북쪽, 시계방향)
 function createDroneIcon(color = '#3b82f6', heading = 0) {
   return L.divIcon({
     className: 'drone-marker',
@@ -41,7 +41,7 @@ function createDroneIcon(color = '#3b82f6', heading = 0) {
 }
 
 export default function MapMonitoring() {
-  const [drones, setDrones] = useState(new Map()); // Map<uuid, {uuid, lat, lon, heading?, name, lastUpdate}>
+  const [drones, setDrones] = useState(new Map()); // Map<uuid, {uuid, lat, lon, heading?, clientName, lastUpdate}>
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState('');
   const [stoppingUuid, setStoppingUuid] = useState(null);
@@ -49,6 +49,7 @@ export default function MapMonitoring() {
   const defaultCenter = [37.5665, 126.978]; // 서울
 
   const handleStopSimulator = async (uuid) => {
+    if (!uuid) return;
     setStoppingUuid(uuid);
     setError('');
     try {
@@ -59,7 +60,12 @@ export default function MapMonitoring() {
         return next;
       });
     } catch (err) {
-      setError(err.response?.data?.message || '시뮬레이션 종료에 실패했습니다.');
+      // 401/J403이면 auth-required 이벤트로 로그인 이동 처리됨. 그 외만 에러 메시지 표시
+      const code = err.response?.data?.code;
+      if (code !== 'J403' && err.response?.status !== 401) {
+        const message = err.response?.data?.message ?? err.message ?? '시뮬레이션 종료에 실패했습니다.';
+        setError(message);
+      }
     } finally {
       setStoppingUuid(null);
     }
@@ -82,37 +88,33 @@ export default function MapMonitoring() {
           return;
         }
 
-        // 좌표 데이터 처리: { uuid, lat, lon, heading? }
+        // 좌표 데이터 처리: { uuid, lat, lon, heading?, clientName? }
+        const toDrone = (item) => ({
+          uuid: item.uuid,
+          lat: item.lat,
+          lon: item.lon,
+          heading: item.heading,
+          clientName: item.clientName ?? item.client_name ?? item.name ?? `Drone ${item.uuid.substring(0, 8)}`,
+          lastUpdate: new Date(),
+        });
+        const hasValidCoords = (item) =>
+          item.uuid && item.lat != null && item.lon != null && Number.isFinite(Number(item.lat)) && Number.isFinite(Number(item.lon));
         if (Array.isArray(data)) {
           console.log('배열 형식 데이터 수신:', data.length, '개');
           const newDrones = new Map();
           data.forEach((item) => {
-            if (item.uuid && item.lat !== undefined && item.lon !== undefined) {
-              newDrones.set(item.uuid, {
-                uuid: item.uuid,
-                lat: item.lat,
-                lon: item.lon,
-                heading: item.heading,
-                name: item.name || `Drone ${item.uuid.substring(0, 8)}`,
-                lastUpdate: new Date(),
-              });
+            if (hasValidCoords(item)) {
+              newDrones.set(item.uuid, toDrone(item));
             }
           });
-          console.log('드론 맵 업데이트:', newDrones.size, '개');
+          console.log('시뮬레이터 맵 업데이트:', newDrones.size, '개');
           setDrones(newDrones);
-        } else if (data.uuid && data.lat !== undefined && data.lon !== undefined) {
-          console.log('단일 드론 데이터 수신:', data.uuid, data.lat, data.lon);
+        } else if (hasValidCoords(data)) {
+          console.log('단일 시뮬레이터 데이터 수신:', data.uuid, data.lat, data.lon);
           setDrones((prev) => {
             const newDrones = new Map(prev);
-            newDrones.set(data.uuid, {
-              uuid: data.uuid,
-              lat: data.lat,
-              lon: data.lon,
-              heading: data.heading,
-              name: data.name || `Drone ${data.uuid.substring(0, 8)}`,
-              lastUpdate: new Date(),
-            });
-            console.log('드론 맵 업데이트 후:', newDrones.size, '개');
+            newDrones.set(data.uuid, toDrone(data));
+            console.log('시뮬레이터 맵 업데이트 후:', newDrones.size, '개');
             return newDrones;
           });
         } else {
@@ -143,20 +145,20 @@ export default function MapMonitoring() {
     };
   }, []);
 
-  const droneList = Array.from(drones.values());
-  
-  console.log('현재 드론 목록:', droneList.length, '개', droneList);
+  const droneList = Array.from(drones.values()).filter(
+    (d) => d.lat != null && d.lon != null && Number.isFinite(d.lat) && Number.isFinite(d.lon)
+  );
 
   return (
     <div className="page map-monitoring-page">
-      <h1>드론 모니터링</h1>
+      <h1>모니터링</h1>
       <div className="monitoring-header">
         <div className="status-indicator">
           <span className={`status-dot ${isConnected ? 'connected' : 'disconnected'}`}></span>
           <span>{isConnected ? '연결됨' : '연결 끊김'}</span>
         </div>
         <div className="drone-count">
-          활성 드론: {droneList.length}대
+          활성 시뮬레이터: {droneList.length}대
         </div>
       </div>
 
@@ -178,23 +180,28 @@ export default function MapMonitoring() {
                 const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'];
                 const color = colors[index % colors.length];
                 const heading = drone.heading != null ? drone.heading : 0;
-                console.log('마커 렌더링:', drone.uuid, drone.lat, drone.lon, heading);
+                const lat = Number(drone.lat);
+                const lon = Number(drone.lon);
+                if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
                 return (
                   <Marker
                     key={drone.uuid}
-                    position={[drone.lat, drone.lon]}
+                    position={[lat, lon]}
                     icon={createDroneIcon(color, heading)}
                   >
                     <Popup>
                       <div className="drone-popup">
-                        <strong>{drone.name}</strong>
-                        <div>위도: {drone.lat.toFixed(6)}</div>
-                        <div>경도: {drone.lon.toFixed(6)}</div>
+                        <div className="drone-popup-title">
+                          <strong>{drone.clientName}</strong>
+                          <span className="drone-uuid-small">{drone.uuid}</span>
+                        </div>
+                        <div>위도: {drone.lat != null ? Number(drone.lat).toFixed(6) : '—'}</div>
+                        <div>경도: {drone.lon != null ? Number(drone.lon).toFixed(6) : '—'}</div>
                         {drone.heading != null && (
-                          <div>방위각: {drone.heading.toFixed(1)}°</div>
+                          <div>방위각: {Number(drone.heading).toFixed(1)}°</div>
                         )}
                         <div className="last-update">
-                          업데이트: {drone.lastUpdate.toLocaleTimeString()}
+                          업데이트: {drone.lastUpdate?.toLocaleTimeString() ?? '—'}
                         </div>
                       </div>
                     </Popup>
@@ -203,16 +210,16 @@ export default function MapMonitoring() {
               })
             ) : (
               <div style={{ position: 'absolute', top: '10px', left: '10px', background: 'white', padding: '10px', zIndex: 1000 }}>
-                드론 데이터 대기 중... (콘솔 확인)
+                시뮬레이터 데이터 대기 중... (콘솔 확인)
               </div>
             )}
           </MapContainer>
         </div>
 
         <div className="monitoring-sidebar">
-          <h3>드론 목록</h3>
+          <h3>시뮬레이터 목록</h3>
           {droneList.length === 0 ? (
-            <p className="no-drones">활성 드론이 없습니다.</p>
+            <p className="no-drones">활성 시뮬레이터가 없습니다.</p>
           ) : (
             <div className="drone-list">
               {droneList.map((drone, index) => {
@@ -225,16 +232,19 @@ export default function MapMonitoring() {
                         className="drone-color-dot" 
                         style={{ backgroundColor: color }}
                       ></span>
-                      <strong>{drone.name}</strong>
+                      <div className="drone-item-title">
+                        <strong>{drone.clientName}</strong>
+                        <span className="drone-uuid-small">{drone.uuid}</span>
+                      </div>
                     </div>
                     <div className="drone-item-details">
-                      <div>위도: {drone.lat.toFixed(6)}</div>
-                      <div>경도: {drone.lon.toFixed(6)}</div>
+                      <div>위도: {drone.lat != null ? Number(drone.lat).toFixed(6) : '—'}</div>
+                      <div>경도: {drone.lon != null ? Number(drone.lon).toFixed(6) : '—'}</div>
                       {drone.heading != null && (
-                        <div>방위각: {drone.heading.toFixed(1)}°</div>
+                        <div>방위각: {Number(drone.heading).toFixed(1)}°</div>
                       )}
                       <div className="last-update-small">
-                        {drone.lastUpdate.toLocaleTimeString()}
+                        {drone.lastUpdate?.toLocaleTimeString() ?? '—'}
                       </div>
                     </div>
                     <button
