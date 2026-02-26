@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { MapContainer, TileLayer, useMapEvents, Polyline } from 'react-leaflet';
-import { runSimulator, stopSimulator } from '../api/simulator.js';
+import { runSimulator } from '../api/simulator.js';
 import { getHostList } from '../api/host.js';
 import { getFormatList } from '../api/format.js';
 import SelectionModal from '../components/SelectionModal.jsx';
@@ -56,10 +56,21 @@ export default function MapSimulator() {
   const [loading, setLoading] = useState(false);
   const [hostModalOpen, setHostModalOpen] = useState(false);
   const [formatModalOpen, setFormatModalOpen] = useState(false);
-  const [runningUuid, setRunningUuid] = useState(null);
-  const [stopping, setStopping] = useState(false);
   const [isAddingPoints, setIsAddingPoints] = useState(true);
   const [mousePosition, setMousePosition] = useState(null);
+
+  const resetToInitial = useCallback(() => {
+    setPoints([]);
+    setSelectedHost(null);
+    setSelectedFormat(null);
+    setForm({ name: '', speed: 10, speedUnit: 'M_S', cycle: 1 });
+    setParameters({});
+    setAdditionalVariables([]);
+    setError('');
+    setSuccess('');
+    setMousePosition(null);
+    setIsAddingPoints(true);
+  }, []);
 
   const addPoint = useCallback((lat, lon) => {
     setPoints((prev) => [...prev, { lat, lon }]);
@@ -152,28 +163,13 @@ export default function MapSimulator() {
         format: selectedFormat.format,
         parameter: parameters,
       };
-      const uuid = await runSimulator(body);
-      setRunningUuid(uuid);
-      setSuccess(`시뮬레이터가 시작되었습니다. (UUID: ${uuid})`);
+      await runSimulator(body);
+      setSuccess('시뮬레이터가 시작되었습니다.');
+      setTimeout(resetToInitial, 1200);
     } catch (err) {
       setError(err.response?.data?.message || '실행에 실패했습니다.');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleStop = async () => {
-    if (!runningUuid) return;
-    setStopping(true);
-    setError('');
-    try {
-      await stopSimulator(runningUuid);
-      setRunningUuid(null);
-      setSuccess('시뮬레이터가 종료되었습니다.');
-    } catch (err) {
-      setError(err.response?.data?.message || '종료에 실패했습니다.');
-    } finally {
-      setStopping(false);
     }
   };
 
@@ -339,20 +335,7 @@ export default function MapSimulator() {
             )}
             {error && <p className="form-error">{error}</p>}
             {success && <p className="form-success">{success}</p>}
-            {runningUuid && (
-              <div className="simulator-status">
-                <p className="status-text">실행 중: {runningUuid.substring(0, 8)}...</p>
-                <button
-                  type="button"
-                  onClick={handleStop}
-                  disabled={stopping}
-                  className="stop-button"
-                >
-                  {stopping ? '종료 중...' : '시뮬레이터 종료'}
-                </button>
-              </div>
-            )}
-            <button type="submit" disabled={loading || points.length < 2 || runningUuid}>
+            <button type="submit" disabled={loading || points.length < 2}>
               {loading ? '전송 중...' : '시뮬레이터 실행'}
             </button>
           </form>
