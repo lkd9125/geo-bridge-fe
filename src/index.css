@@ -8,6 +8,17 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* 서비스 통일 색감 (헤더·버튼과 맞춤) */
+  --color-primary: #1a1a2e;
+  --color-primary-hover: #2d2d44;
+  --color-bg: #f5f5f5;
+  --color-text: #413544;
+  --color-text-strong: #1a1a2e;
+  --color-text-muted: #666;
+  --color-border: #e0e0e0;
+  --color-border-light: #e8e8e8;
+  --color-input-focus: rgba(26, 26, 46, 0.15);
 }
 
 * {

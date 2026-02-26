@@ -210,7 +210,7 @@ export default function MapSimulator() {
             {points.length >= 2 && (
               <Polyline
                 positions={points.map((p) => [p.lat, p.lon])}
-                color="#3b82f6"
+                color="#1a1a2e"
                 weight={4}
                 opacity={0.8}
               />
@@ -222,9 +222,9 @@ export default function MapSimulator() {
                   [points[points.length - 1].lat, points[points.length - 1].lon],
                   [mousePosition.lat, mousePosition.lon]
                 ]}
-                color="#60a5fa"
+                color="#4a4a5e"
                 weight={3}
-                opacity={0.5}
+                opacity={0.6}
                 dashArray="5, 5"
               />
             )}

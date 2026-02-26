@@ -1,0 +1,126 @@
+/* 로그인 / 회원가입 공통 - 서비스 전체 색감과 통일 */
+.auth-page {
+  min-height: calc(100vh - 120px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  background: var(--color-bg, #f5f5f5);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--color-border, #e0e0e0);
+  overflow: hidden;
+}
+
+.auth-card-accent {
+  height: 3px;
+  background: var(--color-primary, #1a1a2e);
+}
+
+.auth-card-inner {
+  padding: 2rem 1.75rem;
+}
+
+.auth-page h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text-strong, #1a1a2e);
+  margin: 0 0 0.35rem;
+  letter-spacing: -0.02em;
+}
+
+.auth-page .auth-subtitle {
+  font-size: 0.9rem;
+  color: var(--color-text-muted, #666);
+  margin: 0 0 1.75rem;
+  line-height: 1.4;
+}
+
+.auth-page .form {
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.auth-page .form label {
+  margin-bottom: 1.1rem;
+}
+
+.auth-page .form label input {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border, #e0e0e0);
+  margin-top: 0.5rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.auth-page .form label input:focus {
+  border-color: var(--color-primary, #1a1a2e);
+  box-shadow: 0 0 0 3px var(--color-input-focus);
+}
+
+.auth-page .form label input::placeholder {
+  color: #999;
+}
+
+.auth-page .form button[type="submit"] {
+  margin-top: 1.25rem;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  background: var(--color-primary, #1a1a2e);
+  color: #fff;
+  border: none;
+  transition: background 0.2s;
+}
+
+.auth-page .form button[type="submit"]:hover:not(:disabled) {
+  background: var(--color-primary-hover, #2d2d44);
+}
+
+.auth-page .form-footer {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--color-border-light, #eee);
+  font-size: 0.9rem;
+  color: var(--color-text-muted, #666);
+}
+
+.auth-page .form-footer a {
+  color: var(--color-primary, #1a1a2e);
+  font-weight: 500;
+}
+
+.auth-page .form-footer a:hover {
+  text-decoration: underline;
+}
+
+.auth-page .form-error {
+  margin: 0.5rem 0 0;
+  padding: 0.6rem 0.75rem;
+  background: #fef2f2;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+  font-size: 0.875rem;
+  color: #b91c1c;
+}
+
+.auth-page .form-success {
+  margin: 0.5rem 0 0;
+  padding: 0.6rem 0.75rem;
+  background: #f0fdf4;
+  border-radius: 8px;
+  border: 1px solid #bbf7d0;
+  font-size: 0.875rem;
+  color: #166534;
+}

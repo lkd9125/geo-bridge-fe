@@ -15,7 +15,7 @@ L.Icon.Default.mergeOptions({
 });
 
 // 시뮬레이터 아이콘 생성 함수 (heading: 도 단위, 0=북쪽, 시계방향)
-function createDroneIcon(color = '#3b82f6', heading = 0) {
+function createDroneIcon(color = '#1a1a2e', heading = 0) {
   return L.divIcon({
     className: 'drone-marker',
     html: `<div style="
@@ -177,7 +177,7 @@ export default function MapMonitoring() {
             />
             {droneList.length > 0 ? (
               droneList.map((drone, index) => {
-                const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'];
+                const colors = ['#1a1a2e', '#b91c1c', '#166534', '#b45309', '#6b21a8'];
                 const color = colors[index % colors.length];
                 const heading = drone.heading != null ? drone.heading : 0;
                 const lat = Number(drone.lat);
@@ -223,7 +223,7 @@ export default function MapMonitoring() {
           ) : (
             <div className="drone-list">
               {droneList.map((drone, index) => {
-                const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'];
+                const colors = ['#1a1a2e', '#b91c1c', '#166534', '#b45309', '#6b21a8'];
                 const color = colors[index % colors.length];
                 return (
                   <div key={drone.uuid} className="drone-item">

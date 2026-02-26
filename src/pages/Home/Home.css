@@ -76,12 +76,12 @@
 }
 
 .home-card:hover {
-  border-color: #3b82f6;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.12);
+  border-color: var(--color-primary, #1a1a2e);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .home-card:focus-visible {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid var(--color-primary, #1a1a2e);
   outline-offset: 2px;
 }
 
@@ -104,26 +104,4 @@
   color: #6b7280;
   line-height: 1.5;
   margin: 0;
-}
-
-.home-card-primary {
-  border-color: #3b82f6;
-  background: linear-gradient(135deg, #eff6ff 0%, #fff 100%);
-}
-
-.home-card-primary .home-card-title {
-  color: #1d4ed8;
-}
-
-/* Logged out: 2 cards in a row */
-.home-actions {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.25rem;
-}
-
-@media (max-width: 480px) {
-  .home-actions {
-    grid-template-columns: 1fr;
-  }
 }

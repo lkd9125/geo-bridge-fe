@@ -45,8 +45,8 @@ export default function Home() {
         <section className="home-section">
           <h2 className="home-section-title">시작하기</h2>
           <p className="home-section-desc">서비스를 이용하려면 로그인해 주세요.</p>
-          <div className="home-actions">
-            <Link to="/login" className="home-card home-card-primary">
+          <div className="home-grid">
+            <Link to="/login" className="home-card">
               <span className="home-card-icon" aria-hidden>→</span>
               <h3 className="home-card-title">로그인</h3>
               <p className="home-card-desc">이미 계정이 있다면 로그인합니다.</p>
