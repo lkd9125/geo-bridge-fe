@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { getFormatList, createFormat, deleteFormat } from '../api/format.js';
-import DetailModal from '../components/DetailModal.jsx';
-import './Pages.css';
+import { getFormatList, createFormat, deleteFormat } from '../../api/format.js';
+import DetailModal from '../../components/DetailModal.jsx';
+import '../Pages.css';
 import './Format.css';
 
 const CONTENT_TYPES = [

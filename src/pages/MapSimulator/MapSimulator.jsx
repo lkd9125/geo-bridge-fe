@@ -1,9 +1,9 @@
 import { useState, useCallback } from 'react';
 import { MapContainer, TileLayer, useMapEvents, Polyline } from 'react-leaflet';
-import { runSimulator } from '../api/simulator.js';
-import { getHostList } from '../api/host.js';
-import { getFormatList } from '../api/format.js';
-import SelectionModal from '../components/SelectionModal.jsx';
+import { runSimulator } from '../../api/simulator.js';
+import { getHostList } from '../../api/host.js';
+import { getFormatList } from '../../api/format.js';
+import SelectionModal from '../../components/SelectionModal.jsx';
 import 'leaflet/dist/leaflet.css';
 import './MapSimulator.css';
 
@@ -113,7 +113,7 @@ export default function MapSimulator() {
     const variables = extractVariables(format.format);
     const additionalVars = variables.filter(v => v !== 'lat' && v !== 'lon' && v !== 'heading');
     setAdditionalVariables(additionalVars);
-    
+
     // 기존 파라미터 중 추가 변수에 해당하는 것만 유지
     const newParameters = {};
     additionalVars.forEach(v => {
@@ -200,7 +200,7 @@ export default function MapSimulator() {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            <MapClickHandler 
+            <MapClickHandler
               onAddPoint={addPoint}
               onMouseMove={handleMouseMove}
               onDoubleClick={handleDoubleClick}
@@ -230,8 +230,8 @@ export default function MapSimulator() {
             )}
           </MapContainer>
           <div className="map-controls">
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={isAddingPoints ? handleDoubleClick : startAddingPoints}
               className={isAddingPoints ? 'active-mode' : ''}
             >
@@ -249,9 +249,9 @@ export default function MapSimulator() {
         <div className="map-form-area">
           <div className="points-header">
             <p className="points-count">선택된 좌표: {points.length}개</p>
-            <button 
-              type="button" 
-              onClick={clearPoints} 
+            <button
+              type="button"
+              onClick={clearPoints}
               disabled={points.length === 0}
               className="clear-points-btn"
             >

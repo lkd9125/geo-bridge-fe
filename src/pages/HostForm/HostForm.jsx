@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { getHostList, createHost, deleteHost } from '../api/host.js';
-import DetailModal from '../components/DetailModal.jsx';
-import './Pages.css';
+import { getHostList, createHost, deleteHost } from '../../api/host.js';
+import DetailModal from '../../components/DetailModal.jsx';
+import '../Pages.css';
 import './Host.css';
 
 const EMITTER_TYPES = ['MQTT', 'TCP', 'HTTP', 'WS'];

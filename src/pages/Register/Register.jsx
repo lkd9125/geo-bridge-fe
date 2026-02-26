@@ -1,30 +1,24 @@
 import { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { login } from '../api/auth.js';
-import { useAuth } from '../contexts/AuthContext.jsx';
-import './Pages.css';
+import { Link, useNavigate } from 'react-router-dom';
+import { register } from '../../api/auth.js';
+import '../Pages.css';
 
-export default function Login() {
+export default function Register() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login: authLogin } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-  const from = location.state?.from?.pathname || '/';
-  const message = location.state?.message;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      const tokenData = await login(username, password);
-      authLogin(tokenData);
-      navigate(from, { replace: true });
+      await register(username, password);
+      navigate('/login', { state: { message: '회원가입이 완료되었습니다. 로그인해 주세요.' } });
     } catch (err) {
-      setError(err.response?.data?.message || '로그인에 실패했습니다.');
+      setError(err.response?.data?.message || '회원가입에 실패했습니다.');
     } finally {
       setLoading(false);
     }
@@ -32,7 +26,7 @@ export default function Login() {
 
   return (
     <div className="page form-page">
-      <h1>로그인</h1>
+      <h1>회원가입</h1>
       <form onSubmit={handleSubmit} className="form">
         <label>
           아이디
@@ -51,16 +45,15 @@ export default function Login() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            autoComplete="current-password"
+            autoComplete="new-password"
           />
         </label>
-        {message && <p className="form-success">{message}</p>}
         {error && <p className="form-error">{error}</p>}
         <button type="submit" disabled={loading}>
-          {loading ? '로그인 중...' : '로그인'}
+          {loading ? '가입 중...' : '회원가입'}
         </button>
         <p className="form-footer">
-          계정이 없으신가요? <Link to="/register">회원가입</Link>
+          이미 계정이 있으신가요? <Link to="/login">로그인</Link>
         </p>
       </form>
     </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import { createMonitoringStream } from '../api/monitoring.js';
-import { stopSimulator } from '../api/simulator.js';
+import { createMonitoringStream } from '../../api/monitoring.js';
+import { stopSimulator } from '../../api/simulator.js';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './MapMonitoring.css';
@@ -76,10 +76,10 @@ export default function MapMonitoring() {
       try {
         const rawData = event.data;
         console.log('수신된 데이터:', rawData);
-        
+
         const data = JSON.parse(rawData);
         console.log('파싱된 데이터:', data);
-        
+
         // 연결 확인 메시지
         if (data.status === 'connected') {
           console.log('모니터링 스트림 연결됨');
@@ -228,8 +228,8 @@ export default function MapMonitoring() {
                 return (
                   <div key={drone.uuid} className="drone-item">
                     <div className="drone-item-header">
-                      <span 
-                        className="drone-color-dot" 
+                      <span
+                        className="drone-color-dot"
                         style={{ backgroundColor: color }}
                       ></span>
                       <div className="drone-item-title">
