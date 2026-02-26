@@ -1,0 +1,158 @@
+.host-page {
+  max-width: 560px;
+}
+
+.host-list-wrap {
+  margin-bottom: 1.5rem;
+}
+
+.host-list-empty {
+  color: #666;
+  font-size: 0.95rem;
+  padding: 1.5rem;
+  text-align: center;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.host-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.host-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid #eee;
+}
+
+.host-item:last-child {
+  border-bottom: none;
+}
+
+.host-item-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1rem;
+  min-width: 0;
+}
+
+.host-item-info-clickable {
+  cursor: pointer;
+  flex: 1;
+  min-width: 0;
+}
+
+.host-item-info-clickable:hover {
+  color: #3b82f6;
+}
+
+.host-item-info-clickable:hover .host-item-name {
+  color: #3b82f6;
+}
+
+.host-item-name {
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.host-item-type {
+  font-size: 0.8rem;
+  padding: 0.15rem 0.5rem;
+  background: #e8e8ed;
+  color: #555;
+  border-radius: 4px;
+}
+
+.host-item-addr {
+  font-size: 0.85rem;
+  color: #666;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.host-item-delete {
+  flex-shrink: 0;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  color: #dc2626;
+  background: #fff;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.host-item-delete:hover:not(:disabled) {
+  background: #fef2f2;
+}
+
+.host-item-delete:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.host-add-btn {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #3b82f6;
+  background: #fff;
+  border: 1px dashed #93c5fd;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.host-add-btn:hover {
+  background: #eff6ff;
+  border-color: #3b82f6;
+}
+
+.host-form-wrap {
+  margin-top: 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.host-form-title {
+  font-size: 1.1rem;
+  margin: 0 0 1rem;
+  color: #333;
+}
+
+.host-form-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.host-form-actions button[type="submit"] {
+  flex: 1;
+  margin-top: 0;
+}
+
+.host-form-cancel {
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  color: #555;
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.host-form-cancel:hover {
+  background: #eee;
+}

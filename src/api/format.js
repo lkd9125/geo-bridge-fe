@@ -10,3 +10,8 @@ export async function getFormatList(params = {}) {
   const { data } = await apiClient.get('/user/format/plist', { params });
   return data;
 }
+
+/** 포맷 삭제 */
+export async function deleteFormat(idx) {
+  await apiClient.delete('/user/format', { params: { idx } });
+}
