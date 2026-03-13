@@ -1,6 +1,7 @@
 import { useEffect, Fragment } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext.jsx';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
+import { apiClient } from './api/client.js';
 import Layout from './components/Layout.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import Home from './pages/Home/Home.jsx';
@@ -14,11 +15,28 @@ import './App.css';
 
 function AuthRequiredListener() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user, logout } = useAuth();
+
   useEffect(() => {
-    const handler = () => navigate('/login', { replace: true });
+    const handler = () => {
+      logout();
+      navigate('/', { replace: true });
+    };
     window.addEventListener('auth-required', handler);
     return () => window.removeEventListener('auth-required', handler);
-  }, [navigate]);
+  }, [navigate, logout]);
+
+  // 페이지 이동 시 토큰 헬스 체크
+  useEffect(() => {
+    if (!user) return;
+    apiClient
+      .get('/user/info')
+      .catch(() => {
+        // 401/J403 등은 interceptor에서 auth-required 이벤트를 발생시켜 처리됨
+      });
+  }, [location.pathname, user]);
+
   return null;
 }
 
