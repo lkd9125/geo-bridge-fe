@@ -1,9 +1,9 @@
 import { useState, useCallback } from 'react';
 import { MapContainer, TileLayer, useMapEvents, Polyline } from 'react-leaflet';
-import { runSimulator, stopSimulator } from '../api/simulator.js';
-import { getHostList } from '../api/host.js';
-import { getFormatList } from '../api/format.js';
-import SelectionModal from '../components/SelectionModal.jsx';
+import { runSimulator } from '../../api/simulator.js';
+import { getHostList } from '../../api/host.js';
+import { getFormatList } from '../../api/format.js';
+import SelectionModal from '../../components/SelectionModal.jsx';
 import 'leaflet/dist/leaflet.css';
 import './MapSimulator.css';
 
@@ -56,10 +56,21 @@ export default function MapSimulator() {
   const [loading, setLoading] = useState(false);
   const [hostModalOpen, setHostModalOpen] = useState(false);
   const [formatModalOpen, setFormatModalOpen] = useState(false);
-  const [runningUuid, setRunningUuid] = useState(null);
-  const [stopping, setStopping] = useState(false);
   const [isAddingPoints, setIsAddingPoints] = useState(true);
   const [mousePosition, setMousePosition] = useState(null);
+
+  const resetToInitial = useCallback(() => {
+    setPoints([]);
+    setSelectedHost(null);
+    setSelectedFormat(null);
+    setForm({ name: '', speed: 10, speedUnit: 'M_S', cycle: 1 });
+    setParameters({});
+    setAdditionalVariables([]);
+    setError('');
+    setSuccess('');
+    setMousePosition(null);
+    setIsAddingPoints(true);
+  }, []);
 
   const addPoint = useCallback((lat, lon) => {
     setPoints((prev) => [...prev, { lat, lon }]);
@@ -102,7 +113,7 @@ export default function MapSimulator() {
     const variables = extractVariables(format.format);
     const additionalVars = variables.filter(v => v !== 'lat' && v !== 'lon' && v !== 'heading');
     setAdditionalVariables(additionalVars);
-    
+
     // 기존 파라미터 중 추가 변수에 해당하는 것만 유지
     const newParameters = {};
     additionalVars.forEach(v => {
@@ -152,28 +163,13 @@ export default function MapSimulator() {
         format: selectedFormat.format,
         parameter: parameters,
       };
-      const uuid = await runSimulator(body);
-      setRunningUuid(uuid);
-      setSuccess(`시뮬레이터가 시작되었습니다. (UUID: ${uuid})`);
+      await runSimulator(body);
+      setSuccess('시뮬레이터가 시작되었습니다.');
+      setTimeout(resetToInitial, 1200);
     } catch (err) {
       setError(err.response?.data?.message || '실행에 실패했습니다.');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleStop = async () => {
-    if (!runningUuid) return;
-    setStopping(true);
-    setError('');
-    try {
-      await stopSimulator(runningUuid);
-      setRunningUuid(null);
-      setSuccess('시뮬레이터가 종료되었습니다.');
-    } catch (err) {
-      setError(err.response?.data?.message || '종료에 실패했습니다.');
-    } finally {
-      setStopping(false);
     }
   };
 
@@ -204,7 +200,7 @@ export default function MapSimulator() {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            <MapClickHandler 
+            <MapClickHandler
               onAddPoint={addPoint}
               onMouseMove={handleMouseMove}
               onDoubleClick={handleDoubleClick}
@@ -214,7 +210,7 @@ export default function MapSimulator() {
             {points.length >= 2 && (
               <Polyline
                 positions={points.map((p) => [p.lat, p.lon])}
-                color="#3b82f6"
+                color="#1a1a2e"
                 weight={4}
                 opacity={0.8}
               />
@@ -226,16 +222,16 @@ export default function MapSimulator() {
                   [points[points.length - 1].lat, points[points.length - 1].lon],
                   [mousePosition.lat, mousePosition.lon]
                 ]}
-                color="#60a5fa"
+                color="#4a4a5e"
                 weight={3}
-                opacity={0.5}
+                opacity={0.6}
                 dashArray="5, 5"
               />
             )}
           </MapContainer>
           <div className="map-controls">
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={isAddingPoints ? handleDoubleClick : startAddingPoints}
               className={isAddingPoints ? 'active-mode' : ''}
             >
@@ -253,9 +249,9 @@ export default function MapSimulator() {
         <div className="map-form-area">
           <div className="points-header">
             <p className="points-count">선택된 좌표: {points.length}개</p>
-            <button 
-              type="button" 
-              onClick={clearPoints} 
+            <button
+              type="button"
+              onClick={clearPoints}
               disabled={points.length === 0}
               className="clear-points-btn"
             >
@@ -339,20 +335,7 @@ export default function MapSimulator() {
             )}
             {error && <p className="form-error">{error}</p>}
             {success && <p className="form-success">{success}</p>}
-            {runningUuid && (
-              <div className="simulator-status">
-                <p className="status-text">실행 중: {runningUuid.substring(0, 8)}...</p>
-                <button
-                  type="button"
-                  onClick={handleStop}
-                  disabled={stopping}
-                  className="stop-button"
-                >
-                  {stopping ? '종료 중...' : '시뮬레이터 종료'}
-                </button>
-              </div>
-            )}
-            <button type="submit" disabled={loading || points.length < 2 || runningUuid}>
+            <button type="submit" disabled={loading || points.length < 2}>
               {loading ? '전송 중...' : '시뮬레이터 실행'}
             </button>
           </form>

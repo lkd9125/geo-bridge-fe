@@ -10,3 +10,8 @@ export async function getHostList(params = {}) {
   const { data } = await apiClient.get('/user/host/plist', { params });
   return data;
 }
+
+/** 호스트 삭제 */
+export async function deleteHost(idx) {
+  await apiClient.delete('/user/host', { params: { idx } });
+}

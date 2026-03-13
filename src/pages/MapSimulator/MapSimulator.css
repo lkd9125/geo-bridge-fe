@@ -59,14 +59,14 @@
 }
 
 .map-controls button.active-mode {
-  background: #3b82f6;
+  background: var(--color-primary, #1a1a2e);
   color: white;
-  border-color: #2563eb;
+  border-color: var(--color-primary, #1a1a2e);
   font-weight: 500;
 }
 
 .map-controls button.active-mode:hover {
-  background: #2563eb;
+  background: var(--color-primary-hover, #2d2d44);
 }
 
 .map-form-area {
@@ -127,14 +127,14 @@
 }
 
 .select-button:hover {
-  border-color: #3b82f6;
-  background: #f9fafb;
+  border-color: var(--color-primary, #1a1a2e);
+  background: #f9f9fb;
 }
 
 .select-button.selected {
-  border-color: #3b82f6;
-  background: #eff6ff;
-  color: #1e40af;
+  border-color: var(--color-primary, #1a1a2e);
+  background: #f0f0f4;
+  color: var(--color-primary, #1a1a2e);
   font-weight: 500;
 }
 
@@ -158,7 +158,7 @@
 .parameter-name {
   display: block;
   font-weight: 500;
-  color: #3b82f6;
+  color: var(--color-primary, #1a1a2e);
   margin-bottom: 0.25rem;
   font-size: 0.85rem;
   font-family: monospace;
