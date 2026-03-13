@@ -8,7 +8,7 @@
 export function createMonitoringStream(onMessage, onError) {
   const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
   const token = localStorage.getItem('accessToken');
-  const url = `${API_BASE}/api/v1/emitter/simulator/monitoring/coords`;
+  const url = `${API_BASE}/api/v1/emitter/client/monitoring/coords`;
   
   let abortController = new AbortController();
   let isClosed = false;
