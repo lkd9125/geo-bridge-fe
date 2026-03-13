@@ -138,6 +138,23 @@
   border: 1px solid #e0e0e0;
 }
 
+.drone-item {
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.drone-item:hover {
+  background: #eef2ff;
+  border-color: #4f46e5;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
+}
+
+.drone-item-focused {
+  background: #e0f2fe;
+  border-color: #0284c7;
+  box-shadow: 0 0 0 1px rgba(2, 132, 199, 0.6);
+}
+
 .drone-item-header {
   display: flex;
   align-items: center;

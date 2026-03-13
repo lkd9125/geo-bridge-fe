@@ -45,6 +45,7 @@ export default function MapMonitoring() {
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState('');
   const [stoppingUuid, setStoppingUuid] = useState(null);
+  const [focusedUuid, setFocusedUuid] = useState(null);
   const eventSourceRef = useRef(null);
   const mapRef = useRef(null);
   const defaultCenter = [37.5665, 126.978]; // 서울
@@ -90,16 +91,34 @@ export default function MapMonitoring() {
         }
 
         // 좌표 데이터 처리: { uuid, lat, lon, heading?, clientName? }
-        const toDrone = (item) => ({
-          uuid: item.uuid,
-          lat: item.lat,
-          lon: item.lon,
-          heading: item.heading,
-          clientName: item.clientName ?? item.client_name ?? item.name ?? `Drone ${item.uuid.substring(0, 8)}`,
-          lastUpdate: new Date(),
-        });
         const hasValidCoords = (item) =>
-          item.uuid && item.lat != null && item.lon != null && Number.isFinite(Number(item.lat)) && Number.isFinite(Number(item.lon));
+          item.uuid &&
+          item.lat != null &&
+          item.lon != null &&
+          Number.isFinite(Number(item.lat)) &&
+          Number.isFinite(Number(item.lon));
+
+        const toDrone = (item) => {
+          const lat = Number(item.lat);
+          const lon = Number(item.lon);
+          const heading =
+            item.heading != null && Number.isFinite(Number(item.heading))
+              ? Number(item.heading)
+              : null;
+
+          return {
+            uuid: item.uuid,
+            lat,
+            lon,
+            heading,
+            clientName:
+              item.clientName ??
+              item.client_name ??
+              item.name ??
+              `Drone ${String(item.uuid).substring(0, 8)}`,
+            lastUpdate: new Date(),
+          };
+        };
         if (Array.isArray(data)) {
           console.log('배열 형식 데이터 수신:', data.length, '개');
           const newDrones = new Map();
@@ -147,7 +166,11 @@ export default function MapMonitoring() {
   }, []);
 
   const droneList = Array.from(drones.values()).filter(
-    (d) => d.lat != null && d.lon != null && Number.isFinite(d.lat) && Number.isFinite(d.lon)
+    (d) =>
+      d.lat != null &&
+      d.lon != null &&
+      Number.isFinite(d.lat) &&
+      Number.isFinite(d.lon)
   );
 
   const handleFocusDrone = (drone) => {
@@ -157,8 +180,10 @@ export default function MapMonitoring() {
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
 
     const currentZoom = mapRef.current.getZoom();
-    const targetZoom = currentZoom < 16 ? 16 : currentZoom;
-    mapRef.current.setView([lat, lon], targetZoom, { animate: true });
+    const MIN_FOCUS_ZOOM = 12;
+    const targetZoom = currentZoom < MIN_FOCUS_ZOOM ? MIN_FOCUS_ZOOM : currentZoom;
+    mapRef.current.flyTo([lat, lon], targetZoom, { animate: true });
+    setFocusedUuid(drone.uuid);
   };
 
   return (
@@ -182,9 +207,7 @@ export default function MapMonitoring() {
             center={defaultCenter}
             zoom={13}
             style={{ height: '100%', width: '100%' }}
-            whenCreated={(map) => {
-              mapRef.current = map;
-            }}
+            ref={mapRef}
           >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -240,10 +263,11 @@ export default function MapMonitoring() {
               {droneList.map((drone, index) => {
                 const colors = ['#1a1a2e', '#b91c1c', '#166534', '#b45309', '#6b21a8'];
                 const color = colors[index % colors.length];
+                const isFocused = focusedUuid === drone.uuid;
                 return (
                   <div
                     key={drone.uuid}
-                    className="drone-item"
+                    className={`drone-item ${isFocused ? 'drone-item-focused' : ''}`}
                     onClick={() => handleFocusDrone(drone)}
                   >
                     <div className="drone-item-header">
