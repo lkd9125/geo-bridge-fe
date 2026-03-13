@@ -1,0 +1,34 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="bridgeGradStatic" x1="0%" y1="100%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#00E5FF"></stop>
+                            <stop offset="100%" stop-color="#8A2BE2"></stop>
+                        </linearGradient>
+                        <linearGradient id="pinGradStatic" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#8A2BE2"></stop>
+                            <stop offset="100%" stop-color="#4A00E0"></stop>
+                        </linearGradient>
+                    </defs>
+
+                    <!-- Start Node (Simulator) -->
+                    <g transform="translate(0, 10)">
+                        <circle cx="120" cy="380" r="48" stroke="#00E5FF" stroke-width="6" fill="none" opacity="0.3"></circle>
+                        <circle cx="120" cy="380" r="24" fill="#00E5FF"></circle>
+                        <path d="M 120 330 L 120 350 M 120 410 L 120 430 M 70 380 L 90 380 M 150 380 L 170 380" stroke="#00E5FF" stroke-width="6" stroke-linecap="round"></path>
+                    </g>
+
+                    <!-- The Bridge (Data Arc) -->
+                    <path d="M 120 390 C 120 100, 300 100, 400 210" stroke="url(#bridgeGradStatic)" stroke-width="24" stroke-linecap="round" fill="none"></path>
+
+                    <!-- Static Data Packets -->
+                    <circle cx="205" cy="205" r="8" fill="#FFFFFF"></circle>
+                    <circle cx="280" cy="148" r="8" fill="#FFFFFF"></circle>
+                    <circle cx="360" cy="155" r="8" fill="#FFFFFF"></circle>
+
+                    <!-- End Node (Client Map Pin) -->
+                    <g transform="translate(0, 10)">
+                        <path d="M 336 200 A 64 64 0 1 1 464 200 C 464 280, 400 400, 400 400 C 400 400, 336 280, 336 200 Z" fill="url(#pinGradStatic)"></path>
+                        <circle cx="400" cy="200" r="24" fill="#111827"></circle>
+                        <circle cx="400" cy="200" r="12" fill="#00E5FF"></circle>
+                    </g>
+                </svg>

@@ -46,6 +46,7 @@ export default function MapMonitoring() {
   const [error, setError] = useState('');
   const [stoppingUuid, setStoppingUuid] = useState(null);
   const eventSourceRef = useRef(null);
+  const mapRef = useRef(null);
   const defaultCenter = [37.5665, 126.978]; // 서울
 
   const handleStopSimulator = async (uuid) => {
@@ -149,6 +150,17 @@ export default function MapMonitoring() {
     (d) => d.lat != null && d.lon != null && Number.isFinite(d.lat) && Number.isFinite(d.lon)
   );
 
+  const handleFocusDrone = (drone) => {
+    if (!mapRef.current) return;
+    const lat = Number(drone.lat);
+    const lon = Number(drone.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+
+    const currentZoom = mapRef.current.getZoom();
+    const targetZoom = currentZoom < 16 ? 16 : currentZoom;
+    mapRef.current.setView([lat, lon], targetZoom, { animate: true });
+  };
+
   return (
     <div className="page map-monitoring-page">
       <h1>모니터링</h1>
@@ -170,6 +182,9 @@ export default function MapMonitoring() {
             center={defaultCenter}
             zoom={13}
             style={{ height: '100%', width: '100%' }}
+            whenCreated={(map) => {
+              mapRef.current = map;
+            }}
           >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -226,7 +241,11 @@ export default function MapMonitoring() {
                 const colors = ['#1a1a2e', '#b91c1c', '#166534', '#b45309', '#6b21a8'];
                 const color = colors[index % colors.length];
                 return (
-                  <div key={drone.uuid} className="drone-item">
+                  <div
+                    key={drone.uuid}
+                    className="drone-item"
+                    onClick={() => handleFocusDrone(drone)}
+                  >
                     <div className="drone-item-header">
                       <span
                         className="drone-color-dot"
@@ -250,7 +269,10 @@ export default function MapMonitoring() {
                     <button
                       type="button"
                       className="drone-stop-btn"
-                      onClick={() => handleStopSimulator(drone.uuid)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStopSimulator(drone.uuid);
+                      }}
                       disabled={stoppingUuid === drone.uuid}
                     >
                       {stoppingUuid === drone.uuid ? '종료 중...' : '시뮬레이션 종료'}

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext.jsx';
+import logo from '../../assets/logo.svg';
 import './Home.css';
 
 export default function Home() {
@@ -8,6 +9,7 @@ export default function Home() {
   return (
     <div className="home-page">
       <section className="home-hero">
+        <img src={logo} alt="Geo Bridge animated logo" className="home-logo" />
         <p className="home-tagline">위치 기반 시뮬레이션을 한곳에서</p>
         <p className="home-desc">
           지도 위에 경로를 그리면, 설정한 속도에 맞춰 좌표 데이터가 실시간으로 전송됩니다.

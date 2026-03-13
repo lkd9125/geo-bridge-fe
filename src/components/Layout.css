@@ -15,10 +15,14 @@
 }
 
 .layout-logo {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #eee;
+  display: flex;
+  align-items: center;
   text-decoration: none;
+}
+
+.layout-logo-image {
+  height: 32px;
+  display: block;
 }
 
 .layout-nav {

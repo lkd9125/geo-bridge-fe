@@ -1,5 +1,6 @@
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import staticLogo from '../assets/static_logo.svg';
 import './Layout.css';
 
 export default function Layout() {
@@ -14,7 +15,9 @@ export default function Layout() {
   return (
     <div className="layout">
       <header className="layout-header">
-        <Link to="/" className="layout-logo">Geo Bridge</Link>
+        <Link to="/" className="layout-logo">
+          <img src={staticLogo} alt="Geo Bridge" className="layout-logo-image" />
+        </Link>
         <nav className="layout-nav">
           {user ? (
             <>

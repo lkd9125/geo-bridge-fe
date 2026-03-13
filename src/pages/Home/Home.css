@@ -11,6 +11,11 @@
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
+.home-logo {
+  height: 72px;
+  margin-bottom: 1.5rem;
+}
+
 .home-tagline {
   font-size: 1.5rem;
   color: #1a1a2e;
