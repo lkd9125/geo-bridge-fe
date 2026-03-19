@@ -44,23 +44,28 @@ export default function MapMonitoring() {
   const [drones, setDrones] = useState(new Map()); // Map<uuid, {uuid, lat, lon, heading?, clientName, lastUpdate}>
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState('');
-  const [stoppingUuid, setStoppingUuid] = useState(null);
+  const [stoppingUuids, setStoppingUuids] = useState(new Set());
+  const [isStoppingAll, setIsStoppingAll] = useState(false);
   const [focusedUuid, setFocusedUuid] = useState(null);
   const eventSourceRef = useRef(null);
   const mapRef = useRef(null);
   const defaultCenter = [37.5665, 126.978]; // 서울
 
+  const removeStoppedDrones = (uuids) => {
+    setDrones((prev) => {
+      const next = new Map(prev);
+      uuids.forEach((uuid) => next.delete(uuid));
+      return next;
+    });
+  };
+
   const handleStopSimulator = async (uuid) => {
     if (!uuid) return;
-    setStoppingUuid(uuid);
+    setStoppingUuids((prev) => new Set(prev).add(uuid));
     setError('');
     try {
       await stopSimulator(uuid);
-      setDrones((prev) => {
-        const next = new Map(prev);
-        next.delete(uuid);
-        return next;
-      });
+      removeStoppedDrones([uuid]);
     } catch (err) {
       // 401/J403이면 auth-required 이벤트로 로그인 이동 처리됨. 그 외만 에러 메시지 표시
       const code = err.response?.data?.code;
@@ -69,7 +74,48 @@ export default function MapMonitoring() {
         setError(message);
       }
     } finally {
-      setStoppingUuid(null);
+      setStoppingUuids((prev) => {
+        const next = new Set(prev);
+        next.delete(uuid);
+        return next;
+      });
+    }
+  };
+
+  const handleStopAllSimulators = async () => {
+    const uuids = Array.from(drones.keys());
+    if (uuids.length === 0 || isStoppingAll) return;
+
+    const confirmed = window.confirm(`활성 시뮬레이터 ${uuids.length}대를 모두 종료할까요?`);
+    if (!confirmed) return;
+
+    setIsStoppingAll(true);
+    setStoppingUuids(new Set(uuids));
+    setError('');
+
+    try {
+      const results = await Promise.allSettled(uuids.map((uuid) => stopSimulator(uuid)));
+      const succeededUuids = uuids.filter((_, index) => results[index].status === 'fulfilled');
+      const failedResults = results.filter((result) => result.status === 'rejected');
+
+      if (succeededUuids.length > 0) {
+        removeStoppedDrones(succeededUuids);
+      }
+
+      if (failedResults.length > 0) {
+        const firstError = failedResults[0].reason;
+        const code = firstError?.response?.data?.code;
+        if (code !== 'J403' && firstError?.response?.status !== 401) {
+          const message =
+            firstError?.response?.data?.message ??
+            firstError?.message ??
+            '일부 시뮬레이션 종료에 실패했습니다.';
+          setError(`${message} (${failedResults.length}대 실패)`);
+        }
+      }
+    } finally {
+      setStoppingUuids(new Set());
+      setIsStoppingAll(false);
     }
   };
 
@@ -255,7 +301,19 @@ export default function MapMonitoring() {
         </div>
 
         <div className="monitoring-sidebar">
-          <h3>시뮬레이터 목록</h3>
+          <div className="monitoring-sidebar-header">
+            <h3>시뮬레이터 목록</h3>
+            {droneList.length > 0 && (
+              <button
+                type="button"
+                className="drone-stop-all-btn"
+                onClick={handleStopAllSimulators}
+                disabled={isStoppingAll}
+              >
+                {isStoppingAll ? '일괄 종료 중...' : '전체 종료'}
+              </button>
+            )}
+          </div>
           {droneList.length === 0 ? (
             <p className="no-drones">활성 시뮬레이터가 없습니다.</p>
           ) : (
@@ -297,9 +355,9 @@ export default function MapMonitoring() {
                         e.stopPropagation();
                         handleStopSimulator(drone.uuid);
                       }}
-                      disabled={stoppingUuid === drone.uuid}
+                      disabled={isStoppingAll || stoppingUuids.has(drone.uuid)}
                     >
-                      {stoppingUuid === drone.uuid ? '종료 중...' : '시뮬레이션 종료'}
+                      {stoppingUuids.has(drone.uuid) ? '종료 중...' : '시뮬레이션 종료'}
                     </button>
                   </div>
                 );

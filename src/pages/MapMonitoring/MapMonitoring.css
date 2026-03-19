@@ -86,6 +86,11 @@
     grid-template-columns: 1fr;
     grid-template-rows: 1fr auto;
   }
+
+  .monitoring-sidebar-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
 .monitoring-map-container {
@@ -117,6 +122,42 @@
   margin: 0 0 1rem 0;
   font-size: 1.1rem;
   color: #1a1a2e;
+}
+
+.monitoring-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.monitoring-sidebar-header h3 {
+  margin: 0;
+}
+
+.drone-stop-all-btn {
+  flex-shrink: 0;
+  padding: 0.5rem 0.85rem;
+  background: #fff;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.drone-stop-all-btn:hover:not(:disabled) {
+  background: #fef2f2;
+  border-color: #ef4444;
+  color: #991b1b;
+}
+
+.drone-stop-all-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .no-drones {

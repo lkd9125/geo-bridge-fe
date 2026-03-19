@@ -11,6 +11,7 @@ import HostForm from './pages/HostForm/HostForm.jsx';
 import FormatForm from './pages/FormatForm/FormatForm.jsx';
 import MapSimulator from './pages/MapSimulator/MapSimulator.jsx';
 import MapMonitoring from './pages/MapMonitoring/MapMonitoring.jsx';
+import LoadTest from './pages/LoadTest/LoadTest.jsx';
 import './App.css';
 
 function AuthRequiredListener() {
@@ -80,6 +81,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <MapMonitoring />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="load-test"
+              element={
+                <ProtectedRoute>
+                  <LoadTest />
                 </ProtectedRoute>
               }
             />

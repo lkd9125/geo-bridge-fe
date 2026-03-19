@@ -41,6 +41,11 @@ export default function Home() {
               <h3 className="home-card-title">모니터링</h3>
               <p className="home-card-desc">실시간으로 전송 중인 시뮬레이터 위치를 지도에서 확인합니다.</p>
             </Link>
+            <Link to="/load-test" className="home-card">
+              <span className="home-card-icon" aria-hidden>🔥</span>
+              <h3 className="home-card-title">부하테스트</h3>
+              <p className="home-card-desc">동일 조건으로 시뮬레이터를 다수 실행해 부하를 점검합니다.</p>
+            </Link>
           </div>
         </section>
       ) : (

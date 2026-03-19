@@ -25,6 +25,7 @@ export default function Layout() {
               <Link to="/format">포맷</Link>
               <Link to="/map">지도 시뮬레이터</Link>
               <Link to="/map/monitoring">모니터링</Link>
+              <Link to="/load-test">부하테스트</Link>
               <button type="button" onClick={handleLogout} className="layout-logout">
                 로그아웃
               </button>
