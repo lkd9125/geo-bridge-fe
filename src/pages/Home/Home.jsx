@@ -10,10 +10,9 @@ export default function Home() {
     <div className="home-page">
       <section className="home-hero">
         <img src={logo} alt="Geo Bridge animated logo" className="home-logo" />
-        <p className="home-tagline">위치 기반 시뮬레이션을 한곳에서</p>
+        <p className="home-tagline">지도 위 클릭 한 번으로 시작하는 위치 데이터 시뮬레이터</p>
         <p className="home-desc">
-          지도 위에 경로를 그리면, 설정한 속도에 맞춰 좌표 데이터가 실시간으로 전송됩니다.
-          MQTT, TCP, HTTP, WebSocket 등 다양한 프로토콜로 드론·차량 시뮬레이션과 모니터링을 할 수 있습니다.
+          지도 위에 경로를 그리면 설정한 속도에 맞춰 실시간 좌표가 생성됩니다. 별도의 하드웨어 없이도 MQTT, TCP, HTTP, WebSocket 등 다양한 프로토콜로 드론·차량의 이동을 즉시 시뮬레이션하고 모니터링하세요.
         </p>
       </section>
 
