@@ -115,7 +115,9 @@
   padding: 1rem;
   min-height: 400px;
   height: 100%;
-  overflow-y: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .monitoring-sidebar h3 {
@@ -170,6 +172,10 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 0.25rem;
 }
 
 .drone-item {

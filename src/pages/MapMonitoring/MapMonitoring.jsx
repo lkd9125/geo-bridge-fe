@@ -41,7 +41,7 @@ function createDroneIcon(color = '#1a1a2e', heading = 0) {
 }
 
 export default function MapMonitoring() {
-  const [drones, setDrones] = useState(new Map()); // Map<uuid, {uuid, lat, lon, heading?, clientName, lastUpdate}>
+  const [drones, setDrones] = useState(new Map()); // Map<uuid, {uuid, lat, lon, heading?, clientName, status, lastUpdate}>
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState('');
   const [stoppingUuids, setStoppingUuids] = useState(new Set());
@@ -51,12 +51,55 @@ export default function MapMonitoring() {
   const mapRef = useRef(null);
   const defaultCenter = [37.5665, 126.978]; // 서울
 
-  const removeStoppedDrones = (uuids) => {
+  const removeDrones = (uuids) => {
     setDrones((prev) => {
       const next = new Map(prev);
       uuids.forEach((uuid) => next.delete(uuid));
       return next;
     });
+    setStoppingUuids((prev) => {
+      const next = new Set(prev);
+      uuids.forEach((uuid) => next.delete(uuid));
+      return next;
+    });
+    setFocusedUuid((prev) => (prev && uuids.includes(prev) ? null : prev));
+  };
+
+  const markStoppedDrones = (items) => {
+    setDrones((prev) => {
+      const next = new Map(prev);
+      items.forEach((item) => {
+        if (!item?.uuid) return;
+        const prevDrone = next.get(item.uuid);
+        next.set(item.uuid, {
+          uuid: item.uuid,
+          lat: null,
+          lon: null,
+          heading: null,
+          clientName:
+            item.clientName ??
+            item.client_name ??
+            item.name ??
+            prevDrone?.clientName ??
+            `Drone ${String(item.uuid).substring(0, 8)}`,
+          status: 'END',
+          lastUpdate: new Date(),
+        });
+      });
+      return next;
+    });
+    setStoppingUuids((prev) => {
+      const next = new Set(prev);
+      items.forEach((item) => {
+        if (item?.uuid) {
+          next.delete(item.uuid);
+        }
+      });
+      return next;
+    });
+    setFocusedUuid((prev) =>
+      prev && items.some((item) => item?.uuid === prev) ? null : prev
+    );
   };
 
   const handleStopSimulator = async (uuid) => {
@@ -65,7 +108,7 @@ export default function MapMonitoring() {
     setError('');
     try {
       await stopSimulator(uuid);
-      removeStoppedDrones([uuid]);
+      removeDrones([uuid]);
     } catch (err) {
       // 401/J403이면 auth-required 이벤트로 로그인 이동 처리됨. 그 외만 에러 메시지 표시
       const code = err.response?.data?.code;
@@ -83,7 +126,9 @@ export default function MapMonitoring() {
   };
 
   const handleStopAllSimulators = async () => {
-    const uuids = Array.from(drones.keys());
+    const uuids = Array.from(drones.values())
+      .filter((drone) => String(drone.status).toUpperCase() !== 'END')
+      .map((drone) => drone.uuid);
     if (uuids.length === 0 || isStoppingAll) return;
 
     const confirmed = window.confirm(`활성 시뮬레이터 ${uuids.length}대를 모두 종료할까요?`);
@@ -99,7 +144,7 @@ export default function MapMonitoring() {
       const failedResults = results.filter((result) => result.status === 'rejected');
 
       if (succeededUuids.length > 0) {
-        removeStoppedDrones(succeededUuids);
+        removeDrones(succeededUuids);
       }
 
       if (failedResults.length > 0) {
@@ -162,19 +207,66 @@ export default function MapMonitoring() {
               item.client_name ??
               item.name ??
               `Drone ${String(item.uuid).substring(0, 8)}`,
+            status: item.status ?? 'PLAYING',
             lastUpdate: new Date(),
           };
         };
+        const isEndedDrone = (item) =>
+          item?.uuid && String(item.status).toUpperCase() === 'END';
+
         if (Array.isArray(data)) {
           console.log('배열 형식 데이터 수신:', data.length, '개');
-          const newDrones = new Map();
-          data.forEach((item) => {
-            if (hasValidCoords(item)) {
-              newDrones.set(item.uuid, toDrone(item));
-            }
+          setDrones((prev) => {
+            const next = new Map();
+
+            prev.forEach((drone, uuid) => {
+              if (String(drone.status).toUpperCase() === 'END') {
+                next.set(uuid, drone);
+              }
+            });
+
+            data.forEach((item) => {
+              if (isEndedDrone(item)) {
+                const prevDrone = prev.get(item.uuid);
+                next.set(item.uuid, {
+                  uuid: item.uuid,
+                  lat: null,
+                  lon: null,
+                  heading: null,
+                  clientName:
+                    item.clientName ??
+                    item.client_name ??
+                    item.name ??
+                    prevDrone?.clientName ??
+                    `Drone ${String(item.uuid).substring(0, 8)}`,
+                  status: 'END',
+                  lastUpdate: new Date(),
+                });
+                return;
+              }
+              if (hasValidCoords(item)) {
+                next.set(item.uuid, toDrone(item));
+              }
+            });
+
+            console.log('시뮬레이터 맵 업데이트:', next.size, '개');
+            return next;
           });
-          console.log('시뮬레이터 맵 업데이트:', newDrones.size, '개');
-          setDrones(newDrones);
+          const endedUuids = data
+            .filter((item) => isEndedDrone(item))
+            .map((item) => item.uuid);
+          if (endedUuids.length > 0) {
+            console.log('종료된 시뮬레이터 상태 반영:', endedUuids);
+            setStoppingUuids((prev) => {
+              const next = new Set(prev);
+              endedUuids.forEach((uuid) => next.delete(uuid));
+              return next;
+            });
+            setFocusedUuid((prev) => (prev && endedUuids.includes(prev) ? null : prev));
+          }
+        } else if (isEndedDrone(data)) {
+          console.log('종료된 시뮬레이터 상태 반영:', data.uuid);
+          markStoppedDrones([data]);
         } else if (hasValidCoords(data)) {
           console.log('단일 시뮬레이터 데이터 수신:', data.uuid, data.lat, data.lon);
           setDrones((prev) => {
@@ -211,8 +303,10 @@ export default function MapMonitoring() {
     };
   }, []);
 
-  const droneList = Array.from(drones.values()).filter(
+  const sidebarDrones = Array.from(drones.values());
+  const activeDrones = sidebarDrones.filter(
     (d) =>
+      String(d.status).toUpperCase() !== 'END' &&
       d.lat != null &&
       d.lon != null &&
       Number.isFinite(d.lat) &&
@@ -241,7 +335,7 @@ export default function MapMonitoring() {
           <span>{isConnected ? '연결됨' : '연결 끊김'}</span>
         </div>
         <div className="drone-count">
-          활성 시뮬레이터: {droneList.length}대
+          활성 시뮬레이터: {activeDrones.length}대
         </div>
       </div>
 
@@ -259,8 +353,8 @@ export default function MapMonitoring() {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            {droneList.length > 0 ? (
-              droneList.map((drone, index) => {
+            {activeDrones.length > 0 ? (
+              activeDrones.map((drone, index) => {
                 const colors = ['#1a1a2e', '#b91c1c', '#166534', '#b45309', '#6b21a8'];
                 const color = colors[index % colors.length];
                 const heading = drone.heading != null ? drone.heading : 0;
@@ -303,7 +397,7 @@ export default function MapMonitoring() {
         <div className="monitoring-sidebar">
           <div className="monitoring-sidebar-header">
             <h3>시뮬레이터 목록</h3>
-            {droneList.length > 0 && (
+            {activeDrones.length > 0 && (
               <button
                 type="button"
                 className="drone-stop-all-btn"
@@ -314,24 +408,25 @@ export default function MapMonitoring() {
               </button>
             )}
           </div>
-          {droneList.length === 0 ? (
-            <p className="no-drones">활성 시뮬레이터가 없습니다.</p>
+          {sidebarDrones.length === 0 ? (
+            <p className="no-drones">시뮬레이터가 없습니다.</p>
           ) : (
             <div className="drone-list">
-              {droneList.map((drone, index) => {
+              {sidebarDrones.map((drone, index) => {
                 const colors = ['#1a1a2e', '#b91c1c', '#166534', '#b45309', '#6b21a8'];
                 const color = colors[index % colors.length];
                 const isFocused = focusedUuid === drone.uuid;
+                const isEnded = String(drone.status).toUpperCase() === 'END';
                 return (
                   <div
                     key={drone.uuid}
                     className={`drone-item ${isFocused ? 'drone-item-focused' : ''}`}
-                    onClick={() => handleFocusDrone(drone)}
+                    onClick={() => !isEnded && handleFocusDrone(drone)}
                   >
                     <div className="drone-item-header">
                       <span
                         className="drone-color-dot"
-                        style={{ backgroundColor: color }}
+                        style={{ backgroundColor: isEnded ? '#9ca3af' : color }}
                       ></span>
                       <div className="drone-item-title">
                         <strong>{drone.clientName}</strong>
@@ -339,9 +434,10 @@ export default function MapMonitoring() {
                       </div>
                     </div>
                     <div className="drone-item-details">
+                      <div>상태: {isEnded ? '종료됨' : '운행 중'}</div>
                       <div>위도: {drone.lat != null ? Number(drone.lat).toFixed(6) : '—'}</div>
                       <div>경도: {drone.lon != null ? Number(drone.lon).toFixed(6) : '—'}</div>
-                      {drone.heading != null && (
+                      {!isEnded && drone.heading != null && (
                         <div>방위각: {Number(drone.heading).toFixed(1)}°</div>
                       )}
                       <div className="last-update-small">
@@ -357,7 +453,7 @@ export default function MapMonitoring() {
                       }}
                       disabled={isStoppingAll || stoppingUuids.has(drone.uuid)}
                     >
-                      {stoppingUuids.has(drone.uuid) ? '종료 중...' : '시뮬레이션 종료'}
+                      {stoppingUuids.has(drone.uuid) ? '종료 중...' : '시뮬레이터 종료'}
                     </button>
                   </div>
                 );
