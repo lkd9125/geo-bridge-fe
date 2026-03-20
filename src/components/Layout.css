@@ -1,5 +1,6 @@
 .layout {
   min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
 }
@@ -59,4 +60,8 @@
 .layout-main {
   flex: 1;
   padding: 2rem;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
 }
