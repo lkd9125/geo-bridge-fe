@@ -48,7 +48,6 @@ export default function MapMonitoring() {
   const [restartingUuids, setRestartingUuids] = useState(new Set());
   const [isStoppingAll, setIsStoppingAll] = useState(false);
   const [focusedUuid, setFocusedUuid] = useState(null);
-  const eventSourceRef = useRef(null);
   const mapRef = useRef(null);
   const defaultCenter = [37.5665, 126.978]; // 서울
 
@@ -319,22 +318,61 @@ export default function MapMonitoring() {
       }
     };
 
-    const handleError = (err) => {
-      console.error('모니터링 스트림 오류:', err);
-      setError('모니터링 연결 오류가 발생했습니다.');
-      setIsConnected(false);
+    let cancelled = false;
+    let closeStream = () => {};
+    let retryTimer = null;
+
+    const clearRetry = () => {
+      if (retryTimer != null) {
+        clearTimeout(retryTimer);
+        retryTimer = null;
+      }
     };
 
-    // SSE 연결 시작
-    const closeStream = createMonitoringStream(handleMessage, handleError);
-    eventSourceRef.current = closeStream;
+    const handleStreamOpen = () => {
+      if (cancelled) return;
+      clearRetry();
+      setIsConnected(true);
+      setError('');
+    };
 
-    // cleanup
+    const handleStreamError = (err) => {
+      console.error('모니터링 스트림 오류:', err);
+      if (cancelled) return;
+      setError('모니터링 연결 오류가 발생했습니다.');
+      setIsConnected(false);
+      clearRetry();
+      retryTimer = window.setTimeout(() => {
+        retryTimer = null;
+        if (!cancelled) connect();
+      }, 3000);
+    };
+
+    const handleStreamEnd = () => {
+      if (cancelled) return;
+      console.warn('모니터링 스트림 종료, 재연결 시도');
+      setIsConnected(false);
+      clearRetry();
+      retryTimer = window.setTimeout(() => {
+        retryTimer = null;
+        if (!cancelled) connect();
+      }, 2000);
+    };
+
+    const connect = () => {
+      closeStream();
+      closeStream = createMonitoringStream(handleMessage, handleStreamError, {
+        onOpen: handleStreamOpen,
+        onStreamEnd: handleStreamEnd,
+      });
+    };
+
+    connect();
+
     return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current();
-        eventSourceRef.current = null;
-      }
+      cancelled = true;
+      clearRetry();
+      closeStream();
       setIsConnected(false);
     };
   }, []);

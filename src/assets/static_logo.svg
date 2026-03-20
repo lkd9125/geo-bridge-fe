@@ -1,34 +1,38 @@
 <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                        <linearGradient id="bridgeGradStatic" x1="0%" y1="100%" x2="100%" y2="0%">
-                            <stop offset="0%" stop-color="#00E5FF"></stop>
-                            <stop offset="100%" stop-color="#8A2BE2"></stop>
-                        </linearGradient>
-                        <linearGradient id="pinGradStatic" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stop-color="#8A2BE2"></stop>
-                            <stop offset="100%" stop-color="#4A00E0"></stop>
-                        </linearGradient>
-                    </defs>
+    <!-- 1. Back Orbit Layer -->
+    <g transform="rotate(-15 256 280)">
+        <path d="M 56 280 A 200 60 0 0 0 456 280" stroke="#FFFFFF" stroke-width="10"
+            stroke-dasharray="12 20" fill="none" opacity="0.15"></path>
+    </g>
 
-                    <!-- Start Node (Simulator) -->
-                    <g transform="translate(0, 10)">
-                        <circle cx="120" cy="380" r="48" stroke="#00E5FF" stroke-width="6" fill="none" opacity="0.3"></circle>
-                        <circle cx="120" cy="380" r="24" fill="#00E5FF"></circle>
-                        <path d="M 120 330 L 120 350 M 120 410 L 120 430 M 70 380 L 90 380 M 150 380 L 170 380" stroke="#00E5FF" stroke-width="6" stroke-linecap="round"></path>
-                    </g>
+    <!-- 2. Globe Base (Solid background to occlude back orbit) -->
+    <g stroke="#FFFFFF" stroke-width="12" fill="none" stroke-linecap="round">
+        <!-- Solid dark fill -->
+        <circle cx="256" cy="280" r="130" fill="#1a1c29" stroke="none"></circle>
+        <circle cx="256" cy="280" r="130" opacity="0.3"></circle>
 
-                    <!-- The Bridge (Data Arc) -->
-                    <path d="M 120 390 C 120 100, 300 100, 400 210" stroke="url(#bridgeGradStatic)" stroke-width="24" stroke-linecap="round" fill="none"></path>
+        <!-- Grids -->
+        <path d="M 148 205 Q 256 250 364 205" opacity="0.3"></path>
+        <path d="M 126 280 Q 256 340 386 280" opacity="0.3"></path>
+        <path d="M 164 372 Q 256 410 348 372" opacity="0.3"></path>
+        <path d="M 256 150 L 256 410" opacity="0.3"></path>
+        <path d="M 256 150 Q 170 280 256 410" opacity="0.3"></path>
+        <path d="M 256 150 Q 342 280 256 410" opacity="0.3"></path>
+    </g>
 
-                    <!-- Static Data Packets -->
-                    <circle cx="205" cy="205" r="8" fill="#FFFFFF"></circle>
-                    <circle cx="280" cy="148" r="8" fill="#FFFFFF"></circle>
-                    <circle cx="360" cy="155" r="8" fill="#FFFFFF"></circle>
+    <!-- 3. Front Orbit Layer -->
+    <g transform="rotate(-15 256 280)">
+        <path d="M 56 280 A 200 60 0 0 1 456 280" stroke="#FFFFFF" stroke-width="16"
+            stroke-dasharray="16 24" stroke-linecap="round" fill="none" opacity="0.9"></path>
+        <circle cx="115" cy="322" r="12" fill="#FFFFFF"></circle>
+        <circle cx="397" cy="322" r="8" fill="#FFFFFF"></circle>
+    </g>
 
-                    <!-- End Node (Client Map Pin) -->
-                    <g transform="translate(0, 10)">
-                        <path d="M 336 200 A 64 64 0 1 1 464 200 C 464 280, 400 400, 400 400 C 400 400, 336 280, 336 200 Z" fill="url(#pinGradStatic)"></path>
-                        <circle cx="400" cy="200" r="24" fill="#111827"></circle>
-                        <circle cx="400" cy="200" r="12" fill="#00E5FF"></circle>
-                    </g>
-                </svg>
+    <!-- 4. Marker -->
+    <g transform="translate(10, 0)">
+        <path
+            d="M 280 145 A 40 40 0 1 1 360 145 C 360 175, 320 220, 320 220 C 320 220, 280 175, 280 145 Z"
+            fill="#FFFFFF"></path>
+        <circle cx="320" cy="145" r="12" fill="#1a1c29"></circle>
+    </g>
+</svg>
