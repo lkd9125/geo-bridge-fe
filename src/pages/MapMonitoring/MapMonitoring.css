@@ -232,11 +232,16 @@
   margin-top: 0.25rem;
 }
 
-.drone-stop-btn {
-  width: 100%;
+.drone-action-row {
+  display: flex;
+  gap: 0.5rem;
   margin-top: 0.75rem;
+}
+
+.drone-stop-btn,
+.drone-restart-btn {
+  flex: 1;
   padding: 0.5rem 0.75rem;
-  background: #ef4444;
   color: white;
   border: none;
   border-radius: 6px;
@@ -246,11 +251,24 @@
   transition: background 0.2s;
 }
 
+.drone-stop-btn {
+  background: #ef4444;
+}
+
 .drone-stop-btn:hover:not(:disabled) {
   background: #dc2626;
 }
 
-.drone-stop-btn:disabled {
+.drone-restart-btn {
+  background: #2563eb;
+}
+
+.drone-restart-btn:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.drone-stop-btn:disabled,
+.drone-restart-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }

@@ -19,3 +19,11 @@ export async function stopSimulator(uuid) {
     params: { uuid },
   });
 }
+
+/**
+ * 시뮬레이터 재시작
+ * @param {string} uuid - 시뮬레이터 UUID
+ */
+export async function restartSimulator(uuid) {
+  await apiClient.post('/emitter/simulator/restart', { uuid });
+}

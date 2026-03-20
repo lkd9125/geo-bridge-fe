@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { createMonitoringStream } from '../../api/monitoring.js';
-import { stopSimulator } from '../../api/simulator.js';
+import { stopSimulator, restartSimulator } from '../../api/simulator.js';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './MapMonitoring.css';
@@ -45,6 +45,7 @@ export default function MapMonitoring() {
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState('');
   const [stoppingUuids, setStoppingUuids] = useState(new Set());
+  const [restartingUuids, setRestartingUuids] = useState(new Set());
   const [isStoppingAll, setIsStoppingAll] = useState(false);
   const [focusedUuid, setFocusedUuid] = useState(null);
   const eventSourceRef = useRef(null);
@@ -58,6 +59,11 @@ export default function MapMonitoring() {
       return next;
     });
     setStoppingUuids((prev) => {
+      const next = new Set(prev);
+      uuids.forEach((uuid) => next.delete(uuid));
+      return next;
+    });
+    setRestartingUuids((prev) => {
       const next = new Set(prev);
       uuids.forEach((uuid) => next.delete(uuid));
       return next;
@@ -97,6 +103,15 @@ export default function MapMonitoring() {
       });
       return next;
     });
+    setRestartingUuids((prev) => {
+      const next = new Set(prev);
+      items.forEach((item) => {
+        if (item?.uuid) {
+          next.delete(item.uuid);
+        }
+      });
+      return next;
+    });
     setFocusedUuid((prev) =>
       prev && items.some((item) => item?.uuid === prev) ? null : prev
     );
@@ -118,6 +133,27 @@ export default function MapMonitoring() {
       }
     } finally {
       setStoppingUuids((prev) => {
+        const next = new Set(prev);
+        next.delete(uuid);
+        return next;
+      });
+    }
+  };
+
+  const handleRestartSimulator = async (uuid) => {
+    if (!uuid) return;
+    setRestartingUuids((prev) => new Set(prev).add(uuid));
+    setError('');
+    try {
+      await restartSimulator(uuid);
+    } catch (err) {
+      const code = err.response?.data?.code;
+      if (code !== 'J403' && err.response?.status !== 401) {
+        const message = err.response?.data?.message ?? err.message ?? '시뮬레이터 재시작에 실패했습니다.';
+        setError(message);
+      }
+    } finally {
+      setRestartingUuids((prev) => {
         const next = new Set(prev);
         next.delete(uuid);
         return next;
@@ -417,6 +453,8 @@ export default function MapMonitoring() {
                 const color = colors[index % colors.length];
                 const isFocused = focusedUuid === drone.uuid;
                 const isEnded = String(drone.status).toUpperCase() === 'END';
+                const isStopping = stoppingUuids.has(drone.uuid);
+                const isRestarting = restartingUuids.has(drone.uuid);
                 return (
                   <div
                     key={drone.uuid}
@@ -444,17 +482,32 @@ export default function MapMonitoring() {
                         {drone.lastUpdate?.toLocaleTimeString() ?? '—'}
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      className="drone-stop-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleStopSimulator(drone.uuid);
-                      }}
-                      disabled={isStoppingAll || stoppingUuids.has(drone.uuid)}
-                    >
-                      {stoppingUuids.has(drone.uuid) ? '종료 중...' : '시뮬레이터 종료'}
-                    </button>
+                    <div className="drone-action-row">
+                      <button
+                        type="button"
+                        className="drone-stop-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleStopSimulator(drone.uuid);
+                        }}
+                        disabled={isStoppingAll || isStopping || isRestarting}
+                      >
+                        {isStopping ? '종료 중...' : '시뮬레이터 종료'}
+                      </button>
+                      {isEnded && (
+                        <button
+                          type="button"
+                          className="drone-restart-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRestartSimulator(drone.uuid);
+                          }}
+                          disabled={isStoppingAll || isStopping || isRestarting}
+                        >
+                          {isRestarting ? '재시작 중...' : '재시작'}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })}
