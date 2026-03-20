@@ -65,3 +65,9 @@
   flex-direction: column;
   overflow-y: auto;
 }
+
+/* 지도 시뮬레이터·모니터링: 메인은 스크롤하지 않고 페이지 내부에서 높이·스크롤 분담 */
+.layout-main:has(.map-page),
+.layout-main:has(.map-monitoring-page) {
+  overflow: hidden;
+}

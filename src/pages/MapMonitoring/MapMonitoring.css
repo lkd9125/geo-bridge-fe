@@ -78,7 +78,8 @@
 
 .monitoring-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
+  /* 지도 : 사이드바 = 9 : 3 */
+  grid-template-columns: minmax(0, 9fr) minmax(0, 3fr);
   grid-template-rows: 1fr;
   gap: 1rem;
   flex: 1;

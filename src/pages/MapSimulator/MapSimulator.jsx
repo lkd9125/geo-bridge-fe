@@ -1,11 +1,25 @@
-import { useState, useCallback } from 'react';
-import { MapContainer, TileLayer, useMapEvents, Polyline } from 'react-leaflet';
+import { useState, useCallback, useEffect } from 'react';
+import { MapContainer, TileLayer, useMap, useMapEvents, Polyline } from 'react-leaflet';
 import { runSimulator } from '../../api/simulator.js';
 import { getHostList } from '../../api/host.js';
 import { getFormatList } from '../../api/format.js';
 import SelectionModal from '../../components/SelectionModal.jsx';
 import 'leaflet/dist/leaflet.css';
 import './MapSimulator.css';
+
+function MapResizeObserver() {
+  const map = useMap();
+  useEffect(() => {
+    map.invalidateSize();
+    const el = map.getContainer();
+    const ro = new ResizeObserver(() => {
+      map.invalidateSize();
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [map]);
+  return null;
+}
 
 function MapClickHandler({ onAddPoint, onMouseMove, onDoubleClick, isAddingPoints }) {
   useMapEvents({
@@ -86,14 +100,9 @@ export default function MapSimulator() {
     setMousePosition(null);
   }, []);
 
-  const startAddingPoints = () => {
+  const startAddingPoints = useCallback(() => {
     setIsAddingPoints(true);
-  };
-
-  const removeLastPoint = () => {
-    setPoints((prev) => prev.slice(0, -1));
-    setMousePosition(null);
-  };
+  }, []);
 
   const clearPoints = () => {
     setPoints([]);
@@ -184,18 +193,17 @@ export default function MapSimulator() {
     <div className="page map-page">
       <h1>지도 시뮬레이터</h1>
       <p className="form-desc">
-        지도를 클릭해 좌표를 순서대로 찍은 뒤, 호스트와 포맷을 선택해 전송하세요.
-        <br />
-        <small>더블클릭으로 좌표 추가 모드를 종료할 수 있습니다.</small>
+        지도를 클릭해 경로를 찍고, 지도에서 더블클릭하면 점 찍기를 끝낼 수 있어요. 좌표만 비우려면 오른쪽의 좌표 초기화를 누르세요. 호스트·포맷을 고른 뒤 전송하세요.
       </p>
 
       <div className="map-layout">
-        <div className="map-container">
+        <div className="map-pane">
           <MapContainer
             center={defaultCenter}
             zoom={13}
             style={{ height: '100%', width: '100%' }}
           >
+            <MapResizeObserver />
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -206,7 +214,6 @@ export default function MapSimulator() {
               onDoubleClick={handleDoubleClick}
               isAddingPoints={isAddingPoints}
             />
-            {/* 확정된 좌표로 그린 선 */}
             {points.length >= 2 && (
               <Polyline
                 positions={points.map((p) => [p.lat, p.lon])}
@@ -215,7 +222,6 @@ export default function MapSimulator() {
                 opacity={0.8}
               />
             )}
-            {/* 마우스를 따라오는 미리보기 선 */}
             {isAddingPoints && points.length > 0 && mousePosition && (
               <Polyline
                 positions={[
@@ -229,36 +235,26 @@ export default function MapSimulator() {
               />
             )}
           </MapContainer>
-          <div className="map-controls">
-            <button
-              type="button"
-              onClick={isAddingPoints ? handleDoubleClick : startAddingPoints}
-              className={isAddingPoints ? 'active-mode' : ''}
-            >
-              {isAddingPoints ? '좌표 추가 중 (더블클릭 종료)' : '좌표 추가 시작'}
-            </button>
-            <button type="button" onClick={removeLastPoint} disabled={points.length === 0}>
-              마지막 점 제거
-            </button>
-            <button type="button" onClick={clearPoints} disabled={points.length === 0}>
-              전체 초기화
-            </button>
-          </div>
         </div>
 
-        <div className="map-form-area">
-          <div className="points-header">
-            <p className="points-count">선택된 좌표: {points.length}개</p>
+        <aside className="map-sidebar">
+          <div className="map-sidebar-top">
             <button
               type="button"
+              className="map-coords-reset"
               onClick={clearPoints}
               disabled={points.length === 0}
-              className="clear-points-btn"
             >
               좌표 초기화
             </button>
+            {!isAddingPoints && (
+              <button type="button" className="map-resume-add" onClick={startAddingPoints}>
+                점 찍기 시작
+              </button>
+            )}
           </div>
-          <form onSubmit={handleSubmit} className="form">
+          <div className="map-form-area">
+            <form onSubmit={handleSubmit} className="form">
             <label>
               호스트 선택
               <button
@@ -339,7 +335,8 @@ export default function MapSimulator() {
               {loading ? '전송 중...' : '시뮬레이터 실행'}
             </button>
           </form>
-        </div>
+          </div>
+        </aside>
       </div>
 
       <SelectionModal

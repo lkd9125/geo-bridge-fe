@@ -1,117 +1,179 @@
+/* 모니터링(.map-monitoring-page)과 동일한 뷰포트 높이 체인 */
 .map-page {
+  width: 100%;
   max-width: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .map-page h1 {
-  margin-bottom: 0.5rem;
+  margin: 0 0 0.75rem 0;
+  flex-shrink: 0;
 }
 
+.map-page .form-desc {
+  flex-shrink: 0;
+  margin-bottom: 0.75rem;
+}
+
+/* 지도 : 사이드바 = 9 : 3 */
 .map-layout {
   display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 1.5rem;
-  margin-top: 1rem;
+  grid-template-columns: minmax(0, 9fr) minmax(0, 3fr);
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: 'map-pane map-sidebar';
+  column-gap: 1rem;
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  margin-top: 0.75rem;
+  align-items: stretch;
 }
 
 @media (max-width: 900px) {
   .map-layout {
     grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'map-pane'
+      'map-sidebar';
+  }
+
+  .map-sidebar {
+    margin-top: 1rem;
+    max-height: none;
+  }
+
+  .map-form-area {
+    overflow: visible;
+  }
+
+  .map-form-area .form {
+    overflow-y: visible;
+    flex: none;
   }
 }
 
-.map-container {
+/* .monitoring-sidebar 와 유사 */
+.map-sidebar {
+  grid-area: map-sidebar;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.map-sidebar-top {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.map-coords-reset {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: inherit;
+  line-height: 1.3;
+  color: #b91c1c;
+  background: #fff;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease,
+    color 0.12s ease;
+}
+
+.map-coords-reset:hover:not(:disabled) {
+  background: #fef2f2;
+  border-color: #f87171;
+  color: #991b1b;
+}
+
+.map-coords-reset:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.map-resume-add {
+  width: 100%;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: inherit;
+  line-height: 1.3;
+  color: var(--color-primary, #1a1a2e);
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.map-resume-add:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+/* .monitoring-map-container 과 동일 — 지도만 전체 칸 */
+.map-pane {
+  grid-area: map-pane;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   overflow: hidden;
-  min-height: 400px;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
   background: #f5f5f5;
 }
 
-.map-container .leaflet-container {
-  height: 400px;
+.map-pane .leaflet-container {
+  height: 100%;
+  min-height: 0;
+  width: 100%;
   z-index: 0;
 }
 
-.map-controls {
-  display: flex;
-  gap: 0.5rem;
-  padding: 0.75rem;
-  background: #fff;
-  border-top: 1px solid #e0e0e0;
-}
-
-.map-controls button {
-  padding: 0.5rem 1rem;
-  background: #f0f0f0;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-
-.map-controls button:hover:not(:disabled) {
-  background: #e5e5e5;
-}
-
-.map-controls button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.map-controls button.active-mode {
-  background: var(--color-primary, #1a1a2e);
-  color: white;
-  border-color: var(--color-primary, #1a1a2e);
-  font-weight: 500;
-}
-
-.map-controls button.active-mode:hover {
-  background: var(--color-primary-hover, #2d2d44);
-}
-
 .map-form-area {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-}
-
-.points-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-}
-
-.points-count {
-  font-weight: 500;
-  color: #1a1a2e;
-  margin: 0;
-}
-
-.clear-points-btn {
-  padding: 0.5rem 1rem;
-  background: #ef4444;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition: background 0.2s;
-}
-
-.clear-points-btn:hover:not(:disabled) {
-  background: #dc2626;
-}
-
-.clear-points-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  background: #9ca3af;
 }
 
 .map-form-area .form {
   margin: 0;
+  border-radius: 8px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 .select-button {
