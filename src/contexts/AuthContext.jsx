@@ -21,6 +21,7 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
+    // file://·Electron에서 window.location.href = '/' 금지 → 드라이브 루트(file:///C:/)로 갈 수 있음
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     setUser(null);

@@ -1,5 +1,13 @@
 import { useEffect, Fragment } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import {
+  BrowserRouter,
+  HashRouter,
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+  useLocation,
+} from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
 import { apiClient } from './api/client.js';
 import Layout from './components/Layout.jsx';
@@ -12,7 +20,16 @@ import FormatForm from './pages/FormatForm/FormatForm.jsx';
 import MapSimulator from './pages/MapSimulator/MapSimulator.jsx';
 import MapMonitoring from './pages/MapMonitoring/MapMonitoring.jsx';
 import LoadTest from './pages/LoadTest/LoadTest.jsx';
+import { prefersHashRouter } from './utils/runtimeEnv.js';
 import './App.css';
+
+/** file:// 또는 (선택) Electron preload 플래그 → HashRouter, 그 외 BrowserRouter */
+function AppRouter({ children }) {
+  if (prefersHashRouter()) {
+    return <HashRouter>{children}</HashRouter>;
+  }
+  return <BrowserRouter>{children}</BrowserRouter>;
+}
 
 function AuthRequiredListener() {
   const navigate = useNavigate();
@@ -44,7 +61,7 @@ function AuthRequiredListener() {
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <AppRouter>
         <Fragment>
           <AuthRequiredListener />
           <Routes>
@@ -96,7 +113,7 @@ function App() {
           </Route>
         </Routes>
         </Fragment>
-      </BrowserRouter>
+      </AppRouter>
     </AuthProvider>
   );
 }

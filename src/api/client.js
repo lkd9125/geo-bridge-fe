@@ -18,7 +18,8 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// 401 또는 JWT 만료(J403) 응답 시 로그아웃 후 로그인 화면으로 (SPA 내 이동, 새로고침 없음)
+// 401/J403 시: storage 정리 + 커스텀 이벤트만 (window.location 사용 금지 — file://에서 file:///C:/ 등으로 이탈)
+// 실제 이동은 App.jsx AuthRequiredListener의 navigate('/')가 담당
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
