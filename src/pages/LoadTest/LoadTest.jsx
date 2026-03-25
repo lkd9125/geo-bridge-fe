@@ -174,8 +174,8 @@ export default function LoadTest() {
       setError('전송 포맷을 선택해 주세요.');
       return;
     }
-    if (!Number.isInteger(count) || count < 1 || count > 1000) {
-      setError('실행 개수는 1~1000 사이 정수로 입력해 주세요.');
+    if (!Number.isInteger(count) || count < 1) {
+      setError('실행 개수는 1 이상의 정수로 입력해 주세요.');
       return;
     }
 
@@ -286,7 +286,6 @@ export default function LoadTest() {
             value={form.count}
             onChange={handleChange}
             min="1"
-            max="1000"
             step="1"
           />
         </label>
