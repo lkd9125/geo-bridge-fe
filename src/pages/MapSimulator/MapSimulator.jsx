@@ -1,9 +1,11 @@
-import { useState, useCallback, useEffect } from 'react';
-import { MapContainer, TileLayer, useMap, useMapEvents, Polyline } from 'react-leaflet';
+import { useState, useCallback, useEffect, useMemo } from 'react';
+import { MapContainer, TileLayer, useMap, useMapEvents, Polyline, GeoJSON } from 'react-leaflet';
 import { runSimulator } from '../../api/simulator.js';
 import { getHostList } from '../../api/host.js';
 import { getFormatList } from '../../api/format.js';
 import SelectionModal from '../../components/SelectionModal.jsx';
+import DetailModal from '../../components/DetailModal.jsx';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './MapSimulator.css';
 
@@ -42,6 +44,96 @@ function MapClickHandler({ onAddPoint, onMouseMove, onDoubleClick, isAddingPoint
   return null;
 }
 
+function GeoJsonOverlay({ geojson, fitOnChange }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!fitOnChange || !geojson) return;
+    try {
+      const layer = L.geoJSON(geojson);
+      const bounds = layer.getBounds();
+      if (bounds && bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [24, 24] });
+      }
+    } catch {
+      // 잘못된 GeoJSON이면 아무것도 하지 않음 (폼 에러는 사이드바에서 처리)
+    }
+  }, [geojson, fitOnChange, map]);
+
+  if (!geojson) return null;
+
+  return (
+    <GeoJSON
+      data={geojson}
+      style={() => ({
+        color: '#2563eb',
+        weight: 2,
+        opacity: 0.9,
+        fillColor: '#3b82f6',
+        fillOpacity: 0.15,
+      })}
+    />
+  );
+}
+
+function GeoJsonOverlays({ layers, fitLayerId }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!fitLayerId) return;
+    const target = layers.find((l) => l.id === fitLayerId)?.geojson;
+    if (!target) return;
+    try {
+      const layer = L.geoJSON(target);
+      const bounds = layer.getBounds();
+      if (bounds && bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [24, 24] });
+      }
+    } catch {
+      // ignore invalid GeoJSON
+    }
+  }, [fitLayerId, layers, map]);
+
+  if (!layers.length) return null;
+
+  const palette = [
+    { stroke: '#2563eb', fill: '#3b82f6' },
+    { stroke: '#16a34a', fill: '#22c55e' },
+    { stroke: '#7c3aed', fill: '#a78bfa' },
+    { stroke: '#ea580c', fill: '#fb923c' },
+    { stroke: '#0f766e', fill: '#2dd4bf' },
+  ];
+
+  return (
+    <>
+      {layers.map((l, idx) => {
+        const c = palette[idx % palette.length];
+        return (
+          <GeoJSON
+            key={`${l.id}:${l.name}`}
+            data={l.geojson}
+            onEachFeature={(_, layer) => {
+              layer.bindTooltip(l.name || 'GeoJSON', {
+                sticky: true,
+                direction: 'top',
+                opacity: 0.95,
+                className: 'geojson-name-tooltip',
+              });
+            }}
+            style={() => ({
+              color: c.stroke,
+              weight: 2,
+              opacity: 0.95,
+              fillColor: c.fill,
+              fillOpacity: 0.14,
+            })}
+          />
+        );
+      })}
+    </>
+  );
+}
+
 // 포맷 문자열에서 변수 추출 (#{변수명} 형식)
 const extractVariables = (formatString) => {
   const regex = /#\{([^}]+)\}/g;
@@ -72,6 +164,12 @@ export default function MapSimulator() {
   const [formatModalOpen, setFormatModalOpen] = useState(false);
   const [isAddingPoints, setIsAddingPoints] = useState(true);
   const [mousePosition, setMousePosition] = useState(null);
+  const [geoJsonLayers, setGeoJsonLayers] = useState([]); // [{ id, name, source, geojson }]
+  const [lastFitGeoJsonLayerId, setLastFitGeoJsonLayerId] = useState('');
+  const [isGeoJsonDragging, setIsGeoJsonDragging] = useState(false);
+  const [geoJsonManageOpen, setGeoJsonManageOpen] = useState(false);
+  const [geoJsonTextDraft, setGeoJsonTextDraft] = useState('');
+  const [geoJsonModalNotice, setGeoJsonModalNotice] = useState({ type: '', text: '' });
 
   const resetToInitial = useCallback(() => {
     setPoints([]);
@@ -84,6 +182,12 @@ export default function MapSimulator() {
     setSuccess('');
     setMousePosition(null);
     setIsAddingPoints(true);
+    setGeoJsonLayers([]);
+    setLastFitGeoJsonLayerId('');
+    setIsGeoJsonDragging(false);
+    setGeoJsonManageOpen(false);
+    setGeoJsonTextDraft('');
+    setGeoJsonModalNotice({ type: '', text: '' });
   }, []);
 
   const addPoint = useCallback((lat, lon) => {
@@ -189,6 +293,103 @@ export default function MapSimulator() {
 
   const defaultCenter = [37.5665, 126.978]; // 서울
 
+  const geoJsonLayerCount = geoJsonLayers.length;
+
+  const isValidGeoJson = (obj) => {
+    if (!obj || typeof obj !== 'object') return false;
+    if (obj.type === 'FeatureCollection' && Array.isArray(obj.features)) return true;
+    if (obj.type === 'Feature' && obj.geometry) return true;
+    if (typeof obj.type === 'string' && /^(Point|MultiPoint|LineString|MultiLineString|Polygon|MultiPolygon|GeometryCollection)$/.test(obj.type)) {
+      return true;
+    }
+    return false;
+  };
+
+  const readGeoJsonFile = async (file) => {
+    const text = await file.text();
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      throw new Error('JSON 파싱에 실패했습니다. 올바른 GeoJSON 파일인지 확인해 주세요.');
+    }
+    if (!isValidGeoJson(parsed)) {
+      throw new Error('GeoJSON 형식이 아닙니다. FeatureCollection/Feature/Geometry 타입만 지원합니다.');
+    }
+    return parsed;
+  };
+
+  const newLayerId = () =>
+    (globalThis.crypto?.randomUUID?.() ||
+      `geojson_${Date.now()}_${Math.random().toString(16).slice(2)}`);
+
+  const addGeoJsonLayer = useCallback((layer) => {
+    setGeoJsonLayers((prev) => [...prev, layer]);
+    setLastFitGeoJsonLayerId(layer.id);
+  }, []);
+
+  const removeGeoJsonLayer = useCallback((id) => {
+    setGeoJsonLayers((prev) => prev.filter((l) => l.id !== id));
+    setLastFitGeoJsonLayerId((prev) => (prev === id ? '' : prev));
+  }, []);
+
+  const renameGeoJsonLayer = useCallback((id, name) => {
+    setGeoJsonLayers((prev) => prev.map((l) => (l.id === id ? { ...l, name } : l)));
+  }, []);
+
+  const handleGeoJsonFiles = useCallback(async (files) => {
+    const file = files?.[0];
+    if (!file) return;
+    setError('');
+    setSuccess('');
+    try {
+      const geojson = await readGeoJsonFile(file);
+      addGeoJsonLayer({
+        id: newLayerId(),
+        name: file.name || '업로드한 GeoJSON',
+        source: 'file',
+        geojson,
+      });
+      setSuccess(`GeoJSON 로드됨: ${file.name}`);
+    } catch (e) {
+      setError(e?.message || 'GeoJSON 파일을 불러오지 못했습니다.');
+    }
+  }, [addGeoJsonLayer]);
+
+  const applyGeoJsonText = useCallback(async () => {
+    setGeoJsonModalNotice({ type: '', text: '' });
+    const raw = String(geoJsonTextDraft || '').trim();
+    if (!raw) {
+      setGeoJsonModalNotice({ type: 'error', text: 'GeoJSON 내용을 입력해 주세요.' });
+      return;
+    }
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      setGeoJsonModalNotice({
+        type: 'error',
+        text: 'JSON 파싱에 실패했습니다. 중괄호/따옴표가 올바른지 확인해 주세요.',
+      });
+      return;
+    }
+    if (!isValidGeoJson(parsed)) {
+      setGeoJsonModalNotice({
+        type: 'error',
+        text: 'GeoJSON 형식이 아닙니다. FeatureCollection/Feature/Geometry 타입만 지원합니다.',
+      });
+      return;
+    }
+    addGeoJsonLayer({
+      id: newLayerId(),
+      name: '직접 입력',
+      source: 'text',
+      geojson: parsed,
+    });
+    setGeoJsonModalNotice({ type: 'success', text: 'GeoJSON 레이어가 추가되었습니다.' });
+    setGeoJsonTextDraft('');
+  }, [addGeoJsonLayer, geoJsonTextDraft]);
+
   return (
     <div className="page map-page">
       <h1>지도 시뮬레이터</h1>
@@ -197,7 +398,61 @@ export default function MapSimulator() {
       </p>
 
       <div className="map-layout">
-        <div className="map-pane">
+        <div
+          className={`map-pane ${isGeoJsonDragging ? 'geojson-dragging' : ''}`}
+          onDragEnter={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsGeoJsonDragging(true);
+          }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsGeoJsonDragging(true);
+          }}
+          onDragLeave={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsGeoJsonDragging(false);
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsGeoJsonDragging(false);
+            const files = Array.from(e.dataTransfer?.files || []).filter((f) =>
+              /\.(geojson|json)$/i.test(f.name)
+            );
+            handleGeoJsonFiles(files);
+          }}
+        >
+          <div className={`geojson-dropzone ${isGeoJsonDragging ? 'active' : ''}`}>
+            <div className="geojson-dropzone-inner">
+              <div className="geojson-dropzone-icon" aria-hidden="true">⬚</div>
+              <div className="geojson-dropzone-title">여기에 GeoJSON 파일을 드롭하세요</div>
+              <div className="geojson-dropzone-actions">
+                <label className="geojson-file-button">
+                  파일 선택
+                  <input
+                    type="file"
+                    accept=".geojson,.json,application/geo+json,application/json"
+                    onChange={(e) => handleGeoJsonFiles(Array.from(e.target.files || []))}
+                  />
+                </label>
+                {geoJsonLayers.length > 0 && (
+                  <button
+                    type="button"
+                    className="geojson-clear-button"
+                    onClick={() => {
+                      setGeoJsonLayers([]);
+                      setLastFitGeoJsonLayerId('');
+                    }}
+                  >
+                    업로드 제거
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
           <MapContainer
             center={defaultCenter}
             zoom={13}
@@ -214,6 +469,7 @@ export default function MapSimulator() {
               onDoubleClick={handleDoubleClick}
               isAddingPoints={isAddingPoints}
             />
+            <GeoJsonOverlays layers={geoJsonLayers} fitLayerId={lastFitGeoJsonLayerId} />
             {points.length >= 2 && (
               <Polyline
                 positions={points.map((p) => [p.lat, p.lon])}
@@ -246,6 +502,18 @@ export default function MapSimulator() {
               disabled={points.length === 0}
             >
               좌표 초기화
+            </button>
+            <button
+              type="button"
+              className="map-geojson-manage"
+              onClick={() => setGeoJsonManageOpen(true)}
+            >
+              GeoJSON{' '}
+              {geoJsonLayerCount > 0 ? (
+                <span className="geojson-count">{geoJsonLayerCount}</span>
+              ) : (
+                <span className="geojson-count empty">0</span>
+              )}
             </button>
             {!isAddingPoints && (
               <button type="button" className="map-resume-add" onClick={startAddingPoints}>
@@ -358,6 +626,76 @@ export default function MapSimulator() {
         getItemLabel={(format) => format.name}
         selectedValue={selectedFormat ? String(selectedFormat.idx) : ''}
       />
+
+      <DetailModal
+        isOpen={geoJsonManageOpen}
+        onClose={() => setGeoJsonManageOpen(false)}
+        title="GeoJSON 적용 항목"
+      >
+        <div className="geojson-manage-add">
+          <div className="geojson-manage-section-title">직접 입력으로 레이어 추가</div>
+          {geoJsonModalNotice.text && (
+            <div className={`geojson-modal-notice ${geoJsonModalNotice.type}`}>
+              {geoJsonModalNotice.text}
+            </div>
+          )}
+          <textarea
+            className="geojson-manage-textarea"
+            value={geoJsonTextDraft}
+            onChange={(e) => setGeoJsonTextDraft(e.target.value)}
+            placeholder={`예:\n{\n  \"type\": \"FeatureCollection\",\n  \"features\": []\n}`}
+            rows={7}
+          />
+          <div className="geojson-manage-actions">
+            <button
+              type="button"
+              className="geojson-manage-apply"
+              onClick={applyGeoJsonText}
+            >
+              레이어 추가
+            </button>
+            <button
+              type="button"
+              className="geojson-manage-clear-draft"
+              onClick={() => setGeoJsonTextDraft('')}
+              disabled={!geoJsonTextDraft.trim()}
+            >
+              입력 지우기
+            </button>
+          </div>
+        </div>
+
+        {geoJsonLayers.length === 0 ? (
+          <div className="geojson-manage-empty">
+            현재 적용된 GeoJSON이 없습니다. 지도 위에 파일을 드롭하거나 “파일 선택”으로 업로드해 주세요.
+          </div>
+        ) : (
+          <div className="geojson-manage-list">
+            {geoJsonLayers.map((layer) => (
+              <div key={layer.id} className="geojson-manage-item">
+                <div className="geojson-manage-meta">
+                  <input
+                    className="geojson-manage-name-input"
+                    value={layer.name}
+                    onChange={(e) => renameGeoJsonLayer(layer.id, e.target.value)}
+                    placeholder="레이어 이름"
+                  />
+                  <div className="geojson-manage-hint">
+                    {layer.source === 'file' ? '파일 업로드' : '직접 입력'}로 추가됨 · 지도에 표시 중
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="geojson-manage-remove"
+                  onClick={() => removeGeoJsonLayer(layer.id)}
+                >
+                  적용 해제
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </DetailModal>
     </div>
   );
 }
