@@ -1,13 +1,46 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { MapContainer, TileLayer, useMap, useMapEvents, Polyline, GeoJSON } from 'react-leaflet';
+import { MapContainer, TileLayer, useMap, useMapEvents, Polyline, GeoJSON, Marker, Popup } from 'react-leaflet';
 import { runSimulator } from '../../api/simulator.js';
 import { getHostList } from '../../api/host.js';
 import { getFormatList } from '../../api/format.js';
+import { createMonitoringStream } from '../../api/monitoring.js';
 import SelectionModal from '../../components/SelectionModal.jsx';
 import DetailModal from '../../components/DetailModal.jsx';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './MapSimulator.css';
+
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+});
+
+function createDroneIcon(color = '#1a1a2e', heading = 0) {
+  return L.divIcon({
+    className: 'drone-marker',
+    html: `<div style="
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform: rotate(${heading}deg);
+    ">
+      <div style="
+        width: 0;
+        height: 0;
+        border-left: 6px solid transparent;
+        border-right: 6px solid transparent;
+        border-bottom: 14px solid ${color};
+        filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+      "></div>
+    </div>`,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+  });
+}
 
 function MapResizeObserver() {
   const map = useMap();
@@ -42,38 +75,6 @@ function MapClickHandler({ onAddPoint, onMouseMove, onDoubleClick, isAddingPoint
     },
   });
   return null;
-}
-
-function GeoJsonOverlay({ geojson, fitOnChange }) {
-  const map = useMap();
-
-  useEffect(() => {
-    if (!fitOnChange || !geojson) return;
-    try {
-      const layer = L.geoJSON(geojson);
-      const bounds = layer.getBounds();
-      if (bounds && bounds.isValid()) {
-        map.fitBounds(bounds, { padding: [24, 24] });
-      }
-    } catch {
-      // 잘못된 GeoJSON이면 아무것도 하지 않음 (폼 에러는 사이드바에서 처리)
-    }
-  }, [geojson, fitOnChange, map]);
-
-  if (!geojson) return null;
-
-  return (
-    <GeoJSON
-      data={geojson}
-      style={() => ({
-        color: '#2563eb',
-        weight: 2,
-        opacity: 0.9,
-        fillColor: '#3b82f6',
-        fillOpacity: 0.15,
-      })}
-    />
-  );
 }
 
 function GeoJsonOverlays({ layers, fitLayerId }) {
@@ -170,24 +171,12 @@ export default function MapSimulator() {
   const [geoJsonManageOpen, setGeoJsonManageOpen] = useState(false);
   const [geoJsonTextDraft, setGeoJsonTextDraft] = useState('');
   const [geoJsonModalNotice, setGeoJsonModalNotice] = useState({ type: '', text: '' });
+  const [sseDrones, setSseDrones] = useState(() => new Map());
 
-  const resetToInitial = useCallback(() => {
+  const clearRoutePointsOnly = useCallback(() => {
     setPoints([]);
-    setSelectedHost(null);
-    setSelectedFormat(null);
-    setForm({ name: '', speed: 10, speedUnit: 'M_S', cycle: 1 });
-    setParameters({});
-    setAdditionalVariables([]);
-    setError('');
-    setSuccess('');
     setMousePosition(null);
     setIsAddingPoints(true);
-    setGeoJsonLayers([]);
-    setLastFitGeoJsonLayerId('');
-    setIsGeoJsonDragging(false);
-    setGeoJsonManageOpen(false);
-    setGeoJsonTextDraft('');
-    setGeoJsonModalNotice({ type: '', text: '' });
   }, []);
 
   const addPoint = useCallback((lat, lon) => {
@@ -278,7 +267,7 @@ export default function MapSimulator() {
       };
       await runSimulator(body);
       setSuccess('시뮬레이터가 시작되었습니다.');
-      setTimeout(resetToInitial, 1200);
+      clearRoutePointsOnly();
     } catch (err) {
       setError(err.response?.data?.message || '실행에 실패했습니다.');
     } finally {
@@ -292,6 +281,164 @@ export default function MapSimulator() {
   };
 
   const defaultCenter = [37.5665, 126.978]; // 서울
+
+  const activeSseDrones = useMemo(
+    () =>
+      Array.from(sseDrones.values()).filter(
+        (d) =>
+          String(d.status).toUpperCase() !== 'END' &&
+          d.lat != null &&
+          d.lon != null &&
+          Number.isFinite(Number(d.lat)) &&
+          Number.isFinite(Number(d.lon))
+      ),
+    [sseDrones]
+  );
+
+  useEffect(() => {
+    const hasValidCoords = (item) =>
+      item.uuid &&
+      item.lat != null &&
+      item.lon != null &&
+      Number.isFinite(Number(item.lat)) &&
+      Number.isFinite(Number(item.lon));
+
+    const toDrone = (item) => ({
+      uuid: item.uuid,
+      lat: Number(item.lat),
+      lon: Number(item.lon),
+      heading:
+        item.heading != null && Number.isFinite(Number(item.heading))
+          ? Number(item.heading)
+          : null,
+      clientName:
+        item.clientName ??
+        item.client_name ??
+        item.name ??
+        `Drone ${String(item.uuid).substring(0, 8)}`,
+      status: item.status ?? 'PLAYING',
+      lastUpdate: new Date(),
+    });
+
+    const isEndedDrone = (item) => item?.uuid && String(item.status).toUpperCase() === 'END';
+
+    const handleMessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.status === 'connected') {
+          return;
+        }
+
+        if (Array.isArray(data)) {
+          setSseDrones((prev) => {
+            const next = new Map();
+            prev.forEach((drone, uuid) => {
+              if (String(drone.status).toUpperCase() === 'END') {
+                next.set(uuid, drone);
+              }
+            });
+            data.forEach((item) => {
+              if (isEndedDrone(item)) {
+                const prevDrone = prev.get(item.uuid);
+                next.set(item.uuid, {
+                  uuid: item.uuid,
+                  lat: null,
+                  lon: null,
+                  heading: null,
+                  clientName:
+                    item.clientName ??
+                    item.client_name ??
+                    item.name ??
+                    prevDrone?.clientName ??
+                    `Drone ${String(item.uuid).substring(0, 8)}`,
+                  status: 'END',
+                  lastUpdate: new Date(),
+                });
+                return;
+              }
+              if (hasValidCoords(item)) {
+                next.set(item.uuid, toDrone(item));
+              }
+            });
+            return next;
+          });
+        } else if (isEndedDrone(data)) {
+          setSseDrones((prev) => {
+            const next = new Map(prev);
+            const prevDrone = next.get(data.uuid);
+            next.set(data.uuid, {
+              uuid: data.uuid,
+              lat: null,
+              lon: null,
+              heading: null,
+              clientName:
+                data.clientName ??
+                data.client_name ??
+                data.name ??
+                prevDrone?.clientName ??
+                `Drone ${String(data.uuid).substring(0, 8)}`,
+              status: 'END',
+              lastUpdate: new Date(),
+            });
+            return next;
+          });
+        } else if (hasValidCoords(data)) {
+          setSseDrones((prev) => {
+            const next = new Map(prev);
+            next.set(data.uuid, toDrone(data));
+            return next;
+          });
+        }
+      } catch {
+        // ignore malformed SSE payloads
+      }
+    };
+
+    let cancelled = false;
+    let closeStream = () => {};
+    let retryTimer = null;
+
+    const clearRetry = () => {
+      if (retryTimer != null) {
+        clearTimeout(retryTimer);
+        retryTimer = null;
+      }
+    };
+
+    const handleStreamError = () => {
+      if (cancelled) return;
+      clearRetry();
+      retryTimer = window.setTimeout(() => {
+        retryTimer = null;
+        if (!cancelled) connect();
+      }, 3000);
+    };
+
+    const handleStreamEnd = () => {
+      if (cancelled) return;
+      clearRetry();
+      retryTimer = window.setTimeout(() => {
+        retryTimer = null;
+        if (!cancelled) connect();
+      }, 2000);
+    };
+
+    const connect = () => {
+      closeStream();
+      closeStream = createMonitoringStream(handleMessage, handleStreamError, {
+        onOpen: clearRetry,
+        onStreamEnd: handleStreamEnd,
+      });
+    };
+
+    connect();
+
+    return () => {
+      cancelled = true;
+      clearRetry();
+      closeStream();
+    };
+  }, []);
 
   const geoJsonLayerCount = geoJsonLayers.length;
 
@@ -490,6 +637,38 @@ export default function MapSimulator() {
                 dashArray="5, 5"
               />
             )}
+            {activeSseDrones.map((drone, index) => {
+              const colors = ['#1a1a2e', '#b91c1c', '#166534', '#b45309', '#6b21a8'];
+              const color = colors[index % colors.length];
+              const heading = drone.heading != null ? drone.heading : 0;
+              const lat = Number(drone.lat);
+              const lon = Number(drone.lon);
+              if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+              return (
+                <Marker
+                  key={drone.uuid}
+                  position={[lat, lon]}
+                  icon={createDroneIcon(color, heading)}
+                >
+                  <Popup>
+                    <div className="drone-popup">
+                      <div className="drone-popup-title">
+                        <strong>{drone.clientName}</strong>
+                        <span className="drone-uuid-small">{drone.uuid}</span>
+                      </div>
+                      <div>위도: {lat.toFixed(6)}</div>
+                      <div>경도: {lon.toFixed(6)}</div>
+                      {drone.heading != null && (
+                        <div>방위각: {Number(drone.heading).toFixed(1)}°</div>
+                      )}
+                      <div className="last-update">
+                        업데이트: {drone.lastUpdate?.toLocaleTimeString() ?? '—'}
+                      </div>
+                    </div>
+                  </Popup>
+                </Marker>
+              );
+            })}
           </MapContainer>
         </div>
 
