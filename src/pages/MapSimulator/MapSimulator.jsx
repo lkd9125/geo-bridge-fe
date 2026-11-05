@@ -284,6 +284,7 @@ export default function MapSimulator() {
       speed: history.speed ?? 10,
       speedUnit: history.speedUnit || 'M_S',
       cycle: history.cycle ?? 1,
+      historySaveYn: false,
     }));
     setParameters(history.parameter || {});
     setAdditionalVariables(additionalVars);

@@ -17,6 +17,8 @@ export default function HistoryModal({ isOpen, onClose, onLoad }) {
   const [loading, setLoading] = useState(false);
   const [actionSn, setActionSn] = useState(null);
   const [error, setError] = useState('');
+  const [favoriteTarget, setFavoriteTarget] = useState(null);
+  const [favoriteTitle, setFavoriteTitle] = useState('');
   const [pagination, setPagination] = useState({
     page: 1,
     totalPage: 0,
@@ -50,17 +52,37 @@ export default function HistoryModal({ isOpen, onClose, onLoad }) {
     }
   }, [isOpen, loadData]);
 
-  const handleFavorite = async (history) => {
+  const applyFavorite = async (history, title) => {
     setActionSn(history.sn);
     setError('');
     try {
-      await toggleHistoryFavorite(history.sn);
+      await toggleHistoryFavorite(history.sn, title);
       await loadData(1);
     } catch (err) {
       setError(err.response?.data?.message || '즐겨찾기 변경에 실패했습니다.');
     } finally {
       setActionSn(null);
     }
+  };
+
+  const handleFavorite = (history) => {
+    if (history.favorite) {
+      applyFavorite(history);
+      return;
+    }
+
+    setFavoriteTarget(history);
+    setFavoriteTitle(history.title || '');
+  };
+
+  const handleFavoriteSubmit = async (e) => {
+    e.preventDefault();
+    const history = favoriteTarget;
+    if (!history) return;
+
+    const title = favoriteTitle.trim() || undefined;
+    setFavoriteTarget(null);
+    await applyFavorite(history, title);
   };
 
   const handleDelete = async (history) => {
@@ -155,6 +177,37 @@ export default function HistoryModal({ isOpen, onClose, onLoad }) {
             다음
           </button>
         </div>
+
+        {favoriteTarget && (
+          <div className="history-name-overlay" onClick={() => setFavoriteTarget(null)}>
+            <form className="history-name-dialog" onSubmit={handleFavoriteSubmit} onClick={(e) => e.stopPropagation()}>
+              <div className="history-name-icon" aria-hidden="true">★</div>
+              <div className="history-name-heading">
+                <h3>즐겨찾기 이름</h3>
+                <p>찾기 쉬운 이름으로 바꿀 수 있어요. 그대로 등록해도 괜찮아요.</p>
+              </div>
+              <label className="history-name-field">
+                이력 이름
+                <input
+                  type="text"
+                  value={favoriteTitle}
+                  onChange={(e) => setFavoriteTitle(e.target.value)}
+                  placeholder={favoriteTarget.title || `이력 #${favoriteTarget.sn}`}
+                  maxLength={100}
+                  autoFocus
+                />
+              </label>
+              <div className="history-name-actions">
+                <button type="button" className="history-name-cancel" onClick={() => setFavoriteTarget(null)}>
+                  취소
+                </button>
+                <button type="submit" className="history-name-submit">
+                  즐겨찾기 등록
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
       </div>
     </div>
   );

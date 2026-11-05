@@ -11,6 +11,7 @@
 }
 
 .history-modal-content {
+  position: relative;
   width: min(760px, 100%);
   max-height: 88vh;
   display: flex;
@@ -219,6 +220,117 @@
 .history-modal-footer button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+.history-name-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.48);
+  backdrop-filter: blur(2px);
+}
+
+.history-name-dialog {
+  width: min(420px, 100%);
+  padding: 1.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 24px 50px rgba(15, 23, 42, 0.28);
+}
+
+.history-name-icon {
+  width: 2.65rem;
+  height: 2.65rem;
+  display: grid;
+  place-items: center;
+  margin-bottom: 0.8rem;
+  border-radius: 12px;
+  background: #fef3c7;
+  color: #d97706;
+  font-size: 1.25rem;
+}
+
+.history-name-heading h3,
+.history-name-heading p {
+  margin: 0;
+}
+
+.history-name-heading h3 {
+  color: #0f172a;
+  font-size: 1.1rem;
+}
+
+.history-name-heading p {
+  margin-top: 0.3rem;
+  color: #64748b;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.history-name-field {
+  display: block;
+  margin-top: 1.1rem;
+  color: #334155;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.history-name-field input {
+  width: 100%;
+  margin-top: 0.4rem;
+  padding: 0.72rem 0.8rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  outline: none;
+  color: #0f172a;
+  background: #ffffff;
+  font: inherit;
+  font-weight: 500;
+}
+
+.history-name-field input:focus {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.16);
+}
+
+.history-name-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  margin-top: 1.1rem;
+}
+
+.history-name-actions button {
+  padding: 0.62rem 0.85rem;
+  border-radius: 9px;
+  font-family: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.history-name-cancel {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+}
+
+.history-name-cancel:hover {
+  background: #f8fafc;
+}
+
+.history-name-submit {
+  border: 1px solid #d97706;
+  background: #d97706;
+  color: #ffffff;
+}
+
+.history-name-submit:hover {
+  background: #b45309;
 }
 
 @media (max-width: 640px) {

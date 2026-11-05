@@ -7,9 +7,9 @@ export async function getHistoryList(params = {}) {
 }
 
 /** 실행 이력 즐겨찾기 상태 변경 */
-export async function toggleHistoryFavorite(sn) {
+export async function toggleHistoryFavorite(sn, title) {
   const { data } = await apiClient.patch('/emitter/history/favorite', null, {
-    params: { sn },
+    params: { sn, ...(title ? { title } : {}) },
   });
   return data;
 }
