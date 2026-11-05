@@ -37,17 +37,34 @@
 }
 
 @media (max-width: 900px) {
+  .map-page {
+    flex: none;
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+  }
+
   .map-layout {
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-rows: minmax(360px, 55vh) auto;
     grid-template-areas:
       'map-pane'
       'map-sidebar';
+    flex: none;
+    height: auto;
+    overflow: visible;
+  }
+
+  .map-pane {
+    height: 55vh;
+    min-height: 360px;
   }
 
   .map-sidebar {
+    height: auto;
     margin-top: 1rem;
     max-height: none;
+    overflow: visible;
   }
 
   .map-form-area {
@@ -454,6 +471,11 @@
   gap: 0.5rem;
   align-items: center;
   justify-content: center;
+  pointer-events: none;
+}
+
+.map-pane.geojson-dragging .geojson-dropzone-actions,
+.geojson-dropzone.active .geojson-dropzone-actions {
   pointer-events: auto;
 }
 

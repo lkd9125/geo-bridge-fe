@@ -71,3 +71,9 @@
 .layout-main:has(.map-monitoring-page) {
   overflow: hidden;
 }
+
+@media (max-width: 900px) {
+  .layout-main:has(.map-page) {
+    overflow-y: auto;
+  }
+}
