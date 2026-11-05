@@ -6,6 +6,7 @@ import { getFormatList } from '../../api/format.js';
 import { createMonitoringStream } from '../../api/monitoring.js';
 import SelectionModal from '../../components/SelectionModal.jsx';
 import DetailModal from '../../components/DetailModal.jsx';
+import HistoryModal from '../../components/HistoryModal.jsx';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import './MapSimulator.css';
@@ -53,6 +54,20 @@ function MapResizeObserver() {
     ro.observe(el);
     return () => ro.disconnect();
   }, [map]);
+  return null;
+}
+
+function RouteFitBounds({ points }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!points || points.length < 2) return;
+    const bounds = L.latLngBounds(points.map((point) => [point.lat, point.lon]));
+    if (bounds.isValid()) {
+      map.fitBounds(bounds, { padding: [36, 36] });
+    }
+  }, [map, points]);
+
   return null;
 }
 
@@ -155,6 +170,7 @@ export default function MapSimulator() {
     speed: 10,
     speedUnit: 'M_S',
     cycle: 1,
+    historySaveYn: true,
   });
   const [parameters, setParameters] = useState({});
   const [additionalVariables, setAdditionalVariables] = useState([]);
@@ -163,8 +179,10 @@ export default function MapSimulator() {
   const [loading, setLoading] = useState(false);
   const [hostModalOpen, setHostModalOpen] = useState(false);
   const [formatModalOpen, setFormatModalOpen] = useState(false);
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [isAddingPoints, setIsAddingPoints] = useState(true);
   const [mousePosition, setMousePosition] = useState(null);
+  const [routeFitPoints, setRouteFitPoints] = useState(null);
   const [geoJsonLayers, setGeoJsonLayers] = useState([]); // [{ id, name, source, geojson }]
   const [lastFitGeoJsonLayerId, setLastFitGeoJsonLayerId] = useState('');
   const [isGeoJsonDragging, setIsGeoJsonDragging] = useState(false);
@@ -175,11 +193,13 @@ export default function MapSimulator() {
 
   const clearRoutePointsOnly = useCallback(() => {
     setPoints([]);
+    setRouteFitPoints(null);
     setMousePosition(null);
     setIsAddingPoints(true);
   }, []);
 
   const addPoint = useCallback((lat, lon) => {
+    setRouteFitPoints(null);
     setPoints((prev) => [...prev, { lat, lon }]);
     setMousePosition(null); // 좌표 추가 후 마우스 위치 초기화
   }, []);
@@ -199,6 +219,7 @@ export default function MapSimulator() {
 
   const clearPoints = () => {
     setPoints([]);
+    setRouteFitPoints(null);
     setMousePosition(null);
     setError('');
     setSuccess('');
@@ -233,6 +254,48 @@ export default function MapSimulator() {
     }));
   };
 
+  const handleHistoryLoad = (history) => {
+    const loadedPoints = Array.isArray(history.path)
+      ? history.path
+          .map((point) => ({ lat: Number(point.lat), lon: Number(point.lon) }))
+          .filter((point) => Number.isFinite(point.lat) && Number.isFinite(point.lon))
+      : [];
+    const historyFormat = history.format || '';
+    const variables = extractVariables(historyFormat);
+    const additionalVars = variables.filter((variable) => variable !== 'lat' && variable !== 'lon' && variable !== 'heading');
+
+    setSelectedHost({
+      idx: `history-${history.sn}`,
+      name: history.title || history.host || `이력 #${history.sn}`,
+      type: history.type,
+      host: history.host,
+      topic: history.topic,
+      hostId: history.hostId,
+      password: history.password,
+    });
+    setSelectedFormat({
+      idx: `history-${history.sn}`,
+      name: `${history.title || `이력 #${history.sn}`} 포맷`,
+      format: historyFormat,
+    });
+    setForm((prev) => ({
+      ...prev,
+      name: history.title || '',
+      speed: history.speed ?? 10,
+      speedUnit: history.speedUnit || 'M_S',
+      cycle: history.cycle ?? 1,
+    }));
+    setParameters(history.parameter || {});
+    setAdditionalVariables(additionalVars);
+    setPoints(loadedPoints);
+    setRouteFitPoints(loadedPoints);
+    setMousePosition(null);
+    setIsAddingPoints(false);
+    setError(loadedPoints.length < 2 ? '이력에 실행 가능한 경로가 없습니다.' : '');
+    setSuccess(loadedPoints.length >= 2 ? '이전 실행 이력을 불러왔습니다.' : '');
+    setHistoryModalOpen(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (points.length < 2) {
@@ -264,6 +327,7 @@ export default function MapSimulator() {
         cycle: Number(form.cycle) || 1,
         format: selectedFormat.format,
         parameter: parameters,
+        historySaveYn: form.historySaveYn,
       };
       await runSimulator(body);
       setSuccess('시뮬레이터가 시작되었습니다.');
@@ -276,8 +340,8 @@ export default function MapSimulator() {
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setForm((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
   const defaultCenter = [37.5665, 126.978]; // 서울
@@ -606,6 +670,7 @@ export default function MapSimulator() {
             style={{ height: '100%', width: '100%' }}
           >
             <MapResizeObserver />
+            <RouteFitBounds points={routeFitPoints} />
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -694,6 +759,13 @@ export default function MapSimulator() {
                 <span className="geojson-count empty">0</span>
               )}
             </button>
+            <button
+              type="button"
+              className="map-history-button"
+              onClick={() => setHistoryModalOpen(true)}
+            >
+              이전 이력 조회하기
+            </button>
             {!isAddingPoints && (
               <button type="button" className="map-resume-add" onClick={startAddingPoints}>
                 점 찍기 시작
@@ -776,6 +848,18 @@ export default function MapSimulator() {
                 ))}
               </div>
             )}
+            <label className="history-save-toggle">
+              <input
+                type="checkbox"
+                name="historySaveYn"
+                checked={form.historySaveYn}
+                onChange={handleChange}
+              />
+              <span>
+                <strong>실행 이력 저장</strong>
+                <small>다음에 같은 경로와 설정을 다시 불러올 수 있어요.</small>
+              </span>
+            </label>
             {error && <p className="form-error">{error}</p>}
             {success && <p className="form-success">{success}</p>}
             <button type="submit" disabled={loading || points.length < 2}>
@@ -804,6 +888,12 @@ export default function MapSimulator() {
         fetchData={getFormatList}
         getItemLabel={(format) => format.name}
         selectedValue={selectedFormat ? String(selectedFormat.idx) : ''}
+      />
+
+      <HistoryModal
+        isOpen={historyModalOpen}
+        onClose={() => setHistoryModalOpen(false)}
+        onLoad={handleHistoryLoad}
       />
 
       <DetailModal

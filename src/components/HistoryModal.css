@@ -1,0 +1,233 @@
+.history-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.58);
+  box-sizing: border-box;
+}
+
+.history-modal-content {
+  width: min(760px, 100%);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.3);
+}
+
+.history-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.15rem 1.25rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.history-modal-header h2,
+.history-modal-header p {
+  margin: 0;
+}
+
+.history-modal-header h2 {
+  color: #0f172a;
+  font-size: 1.2rem;
+}
+
+.history-modal-header p {
+  margin-top: 0.25rem;
+  color: #64748b;
+  font-size: 0.86rem;
+}
+
+.history-modal-close {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+  font-size: 1.65rem;
+  cursor: pointer;
+}
+
+.history-modal-close:hover {
+  background: #f1f5f9;
+}
+
+.history-modal-body {
+  min-height: 320px;
+  padding: 1rem 1.25rem;
+  overflow-y: auto;
+}
+
+.history-modal-error {
+  margin-bottom: 0.75rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid #fecaca;
+  border-radius: 9px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 0.88rem;
+}
+
+.history-modal-state {
+  padding: 4rem 1rem;
+  color: #64748b;
+  text-align: center;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 11px;
+  background: #ffffff;
+}
+
+.history-item.favorite {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.history-item-main {
+  min-width: 0;
+}
+
+.history-item-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #0f172a;
+}
+
+.history-item-title-row strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-favorite-badge {
+  flex-shrink: 0;
+  padding: 0.18rem 0.4rem;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.history-item-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  margin-top: 0.35rem;
+  color: #475569;
+  font-size: 0.82rem;
+}
+
+.history-item-date {
+  margin-top: 0.35rem;
+  color: #94a3b8;
+  font-size: 0.76rem;
+}
+
+.history-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.history-item-actions button {
+  padding: 0.48rem 0.65rem;
+  border-radius: 8px;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.history-item-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.history-favorite-button {
+  min-width: 2.2rem;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #94a3b8;
+  font-size: 1.05rem;
+}
+
+.history-favorite-button.active {
+  border-color: #fcd34d;
+  color: #d97706;
+}
+
+.history-load-button {
+  border: 1px solid #c7d2fe;
+  background: #eef2ff;
+  color: #3730a3;
+}
+
+.history-delete-button {
+  border: 1px solid #fecaca;
+  background: #fff;
+  color: #b91c1c;
+}
+
+.history-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.85rem 1.25rem;
+  border-top: 1px solid #e2e8f0;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.history-modal-footer button {
+  padding: 0.45rem 0.8rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #334155;
+  cursor: pointer;
+}
+
+.history-modal-footer button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .history-item {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .history-item-actions {
+    justify-content: flex-end;
+  }
+}
