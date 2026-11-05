@@ -696,6 +696,28 @@
   border: none !important;
 }
 
+.drone-marker-aircraft {
+  width: 32px;
+  height: 34px;
+  overflow: visible;
+  filter: drop-shadow(0 2px 3px rgba(15, 23, 42, 0.5));
+  transform-origin: center;
+}
+
+.drone-marker-aircraft-body {
+  stroke: rgba(255, 255, 255, 0.96);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  paint-order: stroke fill;
+}
+
+.drone-marker-aircraft-shine {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.38);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+}
+
 .map-page .drone-popup {
   min-width: 150px;
 }

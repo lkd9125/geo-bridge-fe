@@ -18,25 +18,12 @@ L.Icon.Default.mergeOptions({
 function createDroneIcon(color = '#1a1a2e', heading = 0) {
   return L.divIcon({
     className: 'drone-marker',
-    html: `<div style="
-      width: 20px;
-      height: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transform: rotate(${heading}deg);
-    ">
-      <div style="
-        width: 0;
-        height: 0;
-        border-left: 6px solid transparent;
-        border-right: 6px solid transparent;
-        border-bottom: 14px solid ${color};
-        filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
-      "></div>
-    </div>`,
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
+    html: `<svg class="drone-marker-aircraft" style="transform: rotate(${heading}deg);" viewBox="0 0 32 34" aria-hidden="true">
+      <path class="drone-marker-aircraft-body" fill="${color}" d="M16 2.5 19.4 13l9.1 5.4v3.4l-9.4-2.7-1.2 8.2 4.2 3v1.6L16 30l-6.1 1.9v-1.6l4.2-3-1.2-8.2-9.4 2.7v-3.4l9.1-5.4L16 2.5Z" />
+      <path class="drone-marker-aircraft-shine" d="M16 6v19.5" />
+    </svg>`,
+    iconSize: [32, 34],
+    iconAnchor: [16, 17],
   });
 }
 
